@@ -1,4 +1,4 @@
-# used for denoised image training
+# used for training U-Net with two GPU in parallel, modify your GPU number using nproc_per_node
 OMP_NUM_THREADS=1 torchrun \
     --standalone \
     --nnodes 1 \
@@ -6,6 +6,6 @@ OMP_NUM_THREADS=1 torchrun \
 train_multiGPU_parallel_latest.py \
     --batch-size 32 \
     --epochs 20 \
-    --dir_imgs /dataE/WZH-DataCenter/PROCESS-SPT/2023/simPSF_results/UNetDetectionDataset/20240620_SNR19-35_diffBackground_NoLocError_110nmPixSize_3nd/imgs/ \
-    --dir_masks /dataE/WZH-DataCenter/PROCESS-SPT/2023/simPSF_results/UNetDetectionDataset/20240620_SNR19-35_diffBackground_NoLocError_110nmPixSize_3nd/masks/ \
-    --dir_checkpoints ./checkpoints/    
+    --dir_imgs /path/to/snapshot/images/ \
+    --dir_masks /path/to/masks/ \
+    --dir_checkpoints /path/to/save/checkpoints/    
