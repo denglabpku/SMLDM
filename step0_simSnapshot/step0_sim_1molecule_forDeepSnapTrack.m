@@ -24,8 +24,8 @@
 %% INTENTIONALLY KEEP BLANK
 
 close all; clear;
-addpath(genpath('/home/zuhui2/Documents/METHOD/simulation/simPSF'),'-end')
-addpath(genpath('/home/zuhui2/Documents/MATLAB/msdanalyzer'),'-end')
+addpath(genpath('./SMLMM/step0_simSnapshot'),'-end')
+addpath(genpath('./MATLAB/msdanalyzer'),'-end')
 
 % change your desired imaging parameters
 target_pixelSize = 0.11; % desired simulated camera pixel size 0.11 or 0.16, um
@@ -42,8 +42,7 @@ mean_r0 = 1.4141*beads_PixelSize; % replace 1.4141 with your microscope's sigma 
 
 % import simSPT with time delay 1ms
 % simSPT code: ./simSPT -D1=0.03 -D2=2.0 -p1=0.5 -p2=0.5 -sigma=0.031 -dt=0.001 -n_traj=100000 -file=../simPSF/20230309_D2_p5_dt1ms.csv -seed=0
-simSPT_path = '/dataB/zuhui2/Simulation/simSPT_results/20231202_noLocError_log10D';
-% simSPT_path = '/dataB/zuhui2/Simulation/simSPT_results/20231202_noLocError';
+simSPT_path = '/path/to/simSPTresults';
 simSPT_file = [...
     % >>>>>>>> No localization error >>>>>>>
     "20231202_logDm3p0_pure_10kTraj_dt1ms.csv",...
@@ -124,17 +123,16 @@ DiffCoeff = [0.00100    0.00158	0.00251	0.00398	0.00631	0.01000	0.01585	0.02512	
 
 % Starting index of simSPT trajectories
 StartIdx = 1;
-% maximal number of generated image pair at given D and exposure time
-% max_imgpair = 100; 
+
 % desired exposure time to generate PSF
 target_exposure = [30]; % unit ms
 
+% maximal number of generated image pair at given D and exposure time
 windowSize_array = [ones(1,10)*50,ones(1,6)*10,ones(1,9)*25,5,2];
 max_imgpair_array = [ones(1,10)*1000,ones(1,6)*1500,ones(1,11)*500];
 
 % parent directory to save image pairs
-img_pair_saveDir = '/dataE/WZH-DataCenter/PROCESS-SPT/2023/simPSF_results/DeepSTORMDataset/20240319_SNR19-35_NoLocError_110nmPixSize_log10D';';
-% img_pair_saveDir = '/dataE/WZH-DataCenter/PROCESS-SPT/2023/simPSF_results/DeepSTORMDataset/20240928_SNR19-35_Expo100ms_NoLocError_110nmPixSize_log10D';
+img_pair_saveDir = '/path/to/save/simulated_dataset_forDeepSnapTrack';
 mkdir(fullfile(img_pair_saveDir));
 mkdir(fullfile(img_pair_saveDir,'imgs'));
 % mkdir(fullfile(img_pair_saveDir,'masks'));

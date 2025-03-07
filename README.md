@@ -29,7 +29,7 @@ conda install pytorch==1.13.0 torchvision==0.14.0 torchaudio==0.13.0 pytorch-cud
 
 # Train your own models
 
-You can download our pretrained models: the **UNet model** ([checkpoint_epoch13.pth](https://1drv.ms/u/s!ApPGm6eczDkKgUnLgOphRpAwutgG?e=VMcofl)) and the **Deep-SnapTrack model** ([MBX_20231220_110nmPix_rep2_epoch9.pth](https://1drv.ms/u/s!ApPGm6eczDkKgUqF7B__WWXfqQRU?e=IYTqNz)) from the provided OneDrive links. Please note that these models are trained under specific camera setups and experimental conditions. Depending on your own setup and data, you may need to retrain these models to achieve optimal performance for your application. Below is a guide to help you train your own models if needed.
+You can download our pretrained models: the **UNet model** (checkpoint_UNet_epoch20.pth) and the **Deep-SnapTrack model** (MBX_20231220_110nmPix_rep2_epoch9.pth) from the provided OneDrive links. Please note that these models are trained under specific camera setups and experimental conditions. Depending on your own setup and data, you may need to retrain these models to achieve optimal performance for your application. Below is a guide to help you train your own models if needed.
 
 ## Step 1: simSnapshot
 
@@ -48,14 +48,14 @@ For generating training data pairs for DeepSnapTrack, we converted the x-y coord
 After preparing single molecule snapshot images and corresponding masks according to **Step 0: Sim Snapshot**. Specify your path to data pairs in `step1-0_train_multiGPU.sh` by defining:
 
 ```
---dir_img  /path/to/snapshot/images \
---dir_mask  /path/to/masks \
+--dir_img  /path/to/save/simulated_dataset_forUNet/images/ \
+--dir_mask  /path/to/save/simulated_dataset_forUNet/masks/ \
 ```
 
 And define a data path where you save your checkpoint files:
 
 ```
---dir_checkpoint /path/to/save/checkpoints \
+--dir_checkpoint ./checkpoints/ \
 ```
 
 Run the `.sh` file to generate customized UNet models.
@@ -65,14 +65,14 @@ Run the `.sh` file to generate customized UNet models.
 In order to train Deep-SnapTrack with your own data, you need to prepare simulated single molecule snapshot images and corresponding ground truth trajectory maps. Specify your path to data pairs in `step3-0_ptorch_train.sh` by defining:
 
 ```
---dir_img  /path/to/snapshot/images \
---dir_mask  /path/to/trajectory/maps \
+--dir_img  /path/to/save/simulated_dataset_forDeepSnapTrack/imgs \
+--dir_mask  /path/to/save/simulated_dataset_forDeepSnapTrack/trackHeatmap \
 ```
 
 And define a data path where you save your checkpoint files:
 
 ```
---dir_checkpoint /path/to/save/checkpoints \
+--dir_checkpoint ./checkpoints/ \
 ```
 
 Run the `.sh` file to generate customized Deep-SnapTrack models.
@@ -83,11 +83,11 @@ Run the `.sh` file to generate customized Deep-SnapTrack models.
 
 To do segmentation with UNet, specify your data path in the corresponding section of `step1-1_ND2batch_prediction.sh`:
 
-    --model /path/to/your/model/checkpoint_epoch13.pth \
-    --input /path/to/your/data \
-    --output /path/to/save/masks
+    --model /path/to/your/model/checkpoint_UNet_epoch20.pth \
+    --input /path/to/your/data/20240712_Clust01_U2OS_Paxillin_30p5ms_2kframe_001.nd2 \
+    --output /path/to/save/results/
 
- The output will be a `.tif` file corresponding to your raw data named `UNet_mask_MBX_20240620_epoch13_Ch1.tif`
+ The output will be a `.tif` file corresponding to your raw data named `UNet_mask_MBX_20240620_epoch20_Ch1.tif`
 
 ## Step 2: Single Molecule Selection
 
@@ -96,7 +96,7 @@ To do segmentation with UNet, specify your data path in the corresponding sectio
 We use ThunderSTORM (https://github.com/zitmen/thunderstorm) to assist in selecting qualified snapshot from UNet result. To do this, you should first make sure you have download ThunderSTORM plugin in your imagej. Then, choose `Run Macro` and select `step2-1_IJmacro_ThunderSTORM.ijm`, which will open an interface for you to load raw images and define output path for localization result. To note, the previous step will create a sub folder named ThunderSTORM under "mask" folder:
 
 ```
-/path/to/save/masks/ThunderSTORM
+/path/to/save/results/ThunderSTORM
 ```
 
 Your output path are suggested to be defined as this.
@@ -122,16 +122,16 @@ Next you have to specify your data path:
 input_path = '/path/to/your/data/';
 
 % the parent folder of motion blur detection and analysis
-output_path = '/path/to/save/masks/';
+output_path = '/path/to/save/results/';
 
 % defined name of your result for each cell
 input_rawND2_prefix = {...
-    'name_of_result',
+    '20240712_Clust01_U2OS_Paxillin',
      };
 % <<<<<<<<<<<<<<<<<<<< MOTION BLUR DETECTION PARAMETERS <<<<<<<<<<<<<<<<<<<<< %
 ```
 
-After finishing these settings, run `step2-2_script_snapshot_detection.m`. The output will be a file named `Blurdata_UNet_mask_MBX_20240620_epoch13_Ch1.mat`. Note that all names have to be defined in `input_rawND2_prefix` if your raw data contains multiple clusters.
+After finishing these settings, run `step2-2_script_snapshot_detection.m`. The output will be a file named `Blurdata_UNet_mask_MBX_20240620_epoch20_Ch1.mat`. Note that all names have to be defined in `input_rawND2_prefix` if your raw data contains multiple clusters.
 
 ## Step 3: Deep-SnapTrack
 
@@ -140,24 +140,24 @@ To do prediction with Deep-SnapTrack, specify the data path in the corresponding
 ```python
 # >>>>>>>>>>>>>>>>>>>>>>>>>> input >>>>>>>>>>>>>>>>>>>>>>>>>> #
 # directory of your DeepSnapTrack model
-weights_file = '/path/to/your/model/MBX_20231220_110nmPix_rep2_epoch9.pth'
+weights_file = './checkpoints/MBX_20231220_110nmPix_rep2_epoch9.pth'
 
 # parent directory where you save UNet motion blur extracted mat folder
-rootDir = '/path/to/save/masks'
+rootDir = '/path/to/save/results'
 
 # directory of UNet motion blur extracted mat folder
 dataDir = [   
-    'name_of_folder_with_.mat_file',
+    '20240712_Clust01_U2OS_Paxillin_Cell01',
     ]
 
-UNet_model = 'UNet_mask_MBX_20240620_2035_epoch20_Ch1'
+UNet_model = 'UNet_mask_MBX_20240620_epoch20_Ch1'
 blurmat_file_prefix = 'Blurdata_'+UNet_model
 fitresult_file = 'Fitresult_'+UNet_model+'.csv'
 sr_fileName = UNet_model+'_SR_pred_v3.csv'
 
 # raw image files, keep order same as dataDir
 ND2File = [    
-    '/path/to/your/data',
+    '/path/to/your/data/20240712_Clust01_U2OS_Paxillin_30p5ms_2kframe_001.nd2',
     ]
 
 # <<<<<<<<<<<<<<<<<<<<<<<<<<<< input <<<<<<<<<<<<<<<<<<<<<<<<<<<< #
@@ -169,8 +169,8 @@ Then run the following command to generate final results
 python step3-1_batch_prediction.py
 ```
 
-The output will be a CSV file named `UNet_mask_MBX_20240620_epoch13_Ch1_SR_pred_v3.csv`, saved in your input `dataDir`, along with your previously generated MAT file named `Blurdata_UNet_mask_MBX_20240620_epoch13_Ch1.mat`.
+The output will be a CSV file named `UNet_mask_MBX_20240620_epoch20_Ch1_SR_pred_v3.csv`, saved in your input `dataDir`, along with your previously generated MAT file named `Blurdata_UNet_mask_MBX_20240620_epoch20_Ch1.mat`.
 
 ### Step 4: MPALM rendering
 
- You can get the final visualization result by uploading the two files generated from the last step` UNet_mask_MBX_20240620_epoch13_Ch1_SR_pred_v3.csv`  and `Blurdata_UNet_mask_MBX_20240620_epoch13_Ch1.mat `to the MATLAB app provided under ./step4_MPALM_rendering/step4_main_mobilityPALM.mlapp. For the user guide of this app, please see ./step4_MPALM_rendering/Users Guide.docx.
+ You can get the final visualization result by uploading the two files generated from the last step` UNet_mask_MBX_20240620_epoch20_Ch1_SR_pred_v3.csv`  and `Blurdata_UNet_mask_MBX_20240620_epoch20_Ch1.mat `to the MATLAB app provided under ./step4_MPALM_rendering/step4_main_mobilityPALM.mlapp. For the user guide of this app, please see ./step4_MPALM_rendering/Users Guide.docx.

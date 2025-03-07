@@ -84,47 +84,27 @@ def estimate_D(SRArea,coeff_a=1162.0):
 
 # >>>>>>>>>>>>>>>>>>>>>>>>>> input >>>>>>>>>>>>>>>>>>>>>>>>>> #
 
-weights_file = '/home/wdeng_pkuhpc/lustre3/wangzuhui/apps/python/pytorch-deep-storm/weights/MBX_20231220_110nmPix_rep2_epoch9.pth'
+weights_file = './checkpoints/MBX_20231220_110nmPix_rep2_epoch9.pth'
 
 # parent directory where you save UNet motion blur extracted mat folder
-rootDir = '/home/wdeng_pkuhpc/lustre3/wangzuhui/processed_data/Yinchao/20241127_PA646_TMR_CJ9_HomoKI_Halo-RPB1_MPALM/'
+rootDir = '/path/to/save/results/'
 
 # directory of UNet motion blur extracted mat folder
 dataDir = [   
-    '20241127_Cell05_CJ9_Halo_RPB1_Cell01',
-    '20241127_Cell06_notreat_CJ9_Halo_RPB1_Cell01',
+    '20240712_Clust01_U2OS_Paxillin_Cell01',    
     ]
 
 # Number of ND2 images per sample in dataDir
-# ND2PerSample = [10 10 10 7 10 10 9] #[10 for _ in range(9)]
+# ND2PerSample = [10 10 10 7 10 10 9]
 
-UNet_model = 'UNet_mask_MBX_20240620_2035_epoch20_Ch1'
+UNet_model = 'UNet_mask_MBX_20240620_epoch20_Ch1'
 blurmat_file_prefix = 'Blurdata_'+UNet_model
 fitresult_file = 'Fitresult_'+UNet_model+'.csv'
 sr_fileName = UNet_model+'_SR_pred_v3.csv'
 
 # raw image files, keep order same as dataDir
 ND2File = [    
-    '/home/wdeng_pkuhpc/lustre3/wangzuhui/raw_data/YinChao/20241127_PA646_TMR_CJ9_HomoKI_Halo-RPB1_MPALM/20241127_Cell05_CJ9_Halo_RPB1_30p5ms_20kframe_001.nd2',
-    '/home/wdeng_pkuhpc/lustre3/wangzuhui/raw_data/YinChao/20241127_PA646_TMR_CJ9_HomoKI_Halo-RPB1_MPALM/20241127_Cell05_CJ9_Halo_RPB1_30p5ms_20kframe_002.nd2',
-    '/home/wdeng_pkuhpc/lustre3/wangzuhui/raw_data/YinChao/20241127_PA646_TMR_CJ9_HomoKI_Halo-RPB1_MPALM/20241127_Cell05_CJ9_Halo_RPB1_30p5ms_20kframe_003.nd2',
-    '/home/wdeng_pkuhpc/lustre3/wangzuhui/raw_data/YinChao/20241127_PA646_TMR_CJ9_HomoKI_Halo-RPB1_MPALM/20241127_Cell05_CJ9_Halo_RPB1_30p5ms_20kframe_004.nd2',
-    '/home/wdeng_pkuhpc/lustre3/wangzuhui/raw_data/YinChao/20241127_PA646_TMR_CJ9_HomoKI_Halo-RPB1_MPALM/20241127_Cell05_CJ9_Halo_RPB1_30p5ms_20kframe_005.nd2',
-    '/home/wdeng_pkuhpc/lustre3/wangzuhui/raw_data/YinChao/20241127_PA646_TMR_CJ9_HomoKI_Halo-RPB1_MPALM/20241127_Cell05_CJ9_Halo_RPB1_30p5ms_20kframe_006.nd2',
-    '/home/wdeng_pkuhpc/lustre3/wangzuhui/raw_data/YinChao/20241127_PA646_TMR_CJ9_HomoKI_Halo-RPB1_MPALM/20241127_Cell05_CJ9_Halo_RPB1_30p5ms_20kframe_007.nd2',
-    '/home/wdeng_pkuhpc/lustre3/wangzuhui/raw_data/YinChao/20241127_PA646_TMR_CJ9_HomoKI_Halo-RPB1_MPALM/20241127_Cell05_CJ9_Halo_RPB1_30p5ms_20kframe_008.nd2',
-    '/home/wdeng_pkuhpc/lustre3/wangzuhui/raw_data/YinChao/20241127_PA646_TMR_CJ9_HomoKI_Halo-RPB1_MPALM/20241127_Cell05_CJ9_Halo_RPB1_30p5ms_20kframe_009.nd2',
-    '/home/wdeng_pkuhpc/lustre3/wangzuhui/raw_data/YinChao/20241127_PA646_TMR_CJ9_HomoKI_Halo-RPB1_MPALM/20241127_Cell05_CJ9_Halo_RPB1_30p5ms_20kframe_010.nd2',
-    '/home/wdeng_pkuhpc/lustre3/wangzuhui/raw_data/YinChao/20241127_PA646_TMR_CJ9_HomoKI_Halo-RPB1_MPALM/20241127_Cell06_notreat_CJ9_Halo_RPB1_30p5ms_20kframe_001.nd2',
-    '/home/wdeng_pkuhpc/lustre3/wangzuhui/raw_data/YinChao/20241127_PA646_TMR_CJ9_HomoKI_Halo-RPB1_MPALM/20241127_Cell06_notreat_CJ9_Halo_RPB1_30p5ms_20kframe_002.nd2',
-    '/home/wdeng_pkuhpc/lustre3/wangzuhui/raw_data/YinChao/20241127_PA646_TMR_CJ9_HomoKI_Halo-RPB1_MPALM/20241127_Cell06_notreat_CJ9_Halo_RPB1_30p5ms_20kframe_003.nd2',
-    '/home/wdeng_pkuhpc/lustre3/wangzuhui/raw_data/YinChao/20241127_PA646_TMR_CJ9_HomoKI_Halo-RPB1_MPALM/20241127_Cell06_notreat_CJ9_Halo_RPB1_30p5ms_20kframe_004.nd2',
-    '/home/wdeng_pkuhpc/lustre3/wangzuhui/raw_data/YinChao/20241127_PA646_TMR_CJ9_HomoKI_Halo-RPB1_MPALM/20241127_Cell06_notreat_CJ9_Halo_RPB1_30p5ms_20kframe_005.nd2',
-    '/home/wdeng_pkuhpc/lustre3/wangzuhui/raw_data/YinChao/20241127_PA646_TMR_CJ9_HomoKI_Halo-RPB1_MPALM/20241127_Cell06_notreat_CJ9_Halo_RPB1_30p5ms_20kframe_006.nd2',
-    '/home/wdeng_pkuhpc/lustre3/wangzuhui/raw_data/YinChao/20241127_PA646_TMR_CJ9_HomoKI_Halo-RPB1_MPALM/20241127_Cell06_notreat_CJ9_Halo_RPB1_30p5ms_20kframe_007.nd2',
-    '/home/wdeng_pkuhpc/lustre3/wangzuhui/raw_data/YinChao/20241127_PA646_TMR_CJ9_HomoKI_Halo-RPB1_MPALM/20241127_Cell06_notreat_CJ9_Halo_RPB1_30p5ms_20kframe_008.nd2',
-    '/home/wdeng_pkuhpc/lustre3/wangzuhui/raw_data/YinChao/20241127_PA646_TMR_CJ9_HomoKI_Halo-RPB1_MPALM/20241127_Cell06_notreat_CJ9_Halo_RPB1_30p5ms_20kframe_009.nd2',
-    '/home/wdeng_pkuhpc/lustre3/wangzuhui/raw_data/YinChao/20241127_PA646_TMR_CJ9_HomoKI_Halo-RPB1_MPALM/20241127_Cell06_notreat_CJ9_Halo_RPB1_30p5ms_20kframe_010.nd2',
+    '/path/to/your/data/20240712_Clust01_U2OS_Paxillin_30p5ms_2kframe_001.nd2',    
     ]
 
 # <<<<<<<<<<<<<<<<<<<<<<<<<<<< input <<<<<<<<<<<<<<<<<<<<<<<<<<<< #

@@ -6,6 +6,6 @@ OMP_NUM_THREADS=1 torchrun \
 train_multiGPU_parallel_latest.py \
     --batch-size 32 \
     --epochs 20 \
-    --dir_imgs /path/to/snapshot/images/ \
-    --dir_masks /path/to/masks/ \
-    --dir_checkpoints /path/to/save/checkpoints/    
+    --dir_imgs /path/to/save/simulated_dataset_forUNet/images/ \
+    --dir_masks /path/to/save/simulated_dataset_forUNet/masks/ \
+    --dir_checkpoints ./checkpoints/    

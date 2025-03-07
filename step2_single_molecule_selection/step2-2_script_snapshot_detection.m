@@ -19,7 +19,7 @@
 %% INTENTIONALLY KEEP BLANK
 %% INTENTIONALLY KEEP BLANK
 clc; clear; close all;
-addpath(genpath('/home/wdeng_pkuhpc/lustre3/wangzuhui/apps/matlab/psfanalysis')) % add bio-formats MATLAB Toolbox to the search path
+addpath(genpath('./SMLMM/step2_single_molecule_selection')) % add bio-formats MATLAB Toolbox to the search path
 %% DEFINE PARAMETERS
 
 % >>>>>>>>>>>>>>>>>>>> NUCLEUS SELECTION (LARGE FOV ONLY) >>>>>>>>>>>>>>> %
@@ -27,7 +27,7 @@ has_bulk_imgs = false;
 skip_drawROI = false; % set true if already done
 draw_fullROI = true;
 MPALM_CHANNEL = 1; % channel of mPALM. 1 for left cam, 2 for back cam.
-WideField_subfolder = 'BF';
+WideField_subfolder = 'BF'; % Brightfield image folder name for draw nucleus masks
 % <<<<<<<<<<<<<<<<<<<< NUCLEUS SELECTION (LARGE FOV ONLY) <<<<<<<<<<<<<<< %
 
 % >>>>>>>>>>>>>>>>>>>> MOTION BLUR DETECTION PARAMETERS >>>>>>>>>>>>>>>>>>>>> %
@@ -38,22 +38,21 @@ impars.ExposureTime = 30.5; % in milliseconds
 
 % General parameters
 filter.MaxTotalPhoton = Inf; % Total photon number exceed this value will be discarded, 2000 is a good value to remove out-of-focus blurry signal; Use ThunderSTORM to keep only one loc MB, so not necessary.
-filter.UNet_model_tif = 'UNet_mask_MBX_20240620_2035_epoch20_Ch1.tif';
+filter.UNet_model_tif = 'UNet_mask_MBX_20240620_epoch20_Ch1.tif'; 
 filter.ThunderSTORM_saveSubfolder = 'ThunderSTORM';
 filter.useLocFilter = true; % Use ThunderSTORM localization to filter molecule signals
 % <<<<<<<<<<<<<<<<<<<< MOTION BLUR DETECTION PARAMETERS <<<<<<<<<<<<<<<<<<<<< %
 
 % DEFINE INPUT AND OUTPUT
 % where you save ND2 file
-input_path = '/home/wdeng_pkuhpc/lustre3/wangzuhui/raw_data/YinChao/20241127_PA646_TMR_CJ9_HomoKI_Halo-RPB1_MPALM/';
+input_path = '/path/to/your/data/';
 
 % the parent folder of motion blur detection and analysis
-output_path = '/home/wdeng_pkuhpc/lustre3/wangzuhui/processed_data/Yinchao/20241127_PA646_TMR_CJ9_HomoKI_Halo-RPB1_MPALM/';
+output_path = '/path/to/save/results/';
 
 % ND file name
 input_rawND2_prefix = {...
-    '20241127_Cell05_CJ9_Halo_RPB1',
-    '20241127_Cell06_notreat_CJ9_Halo_RPB1',
+    '20240712_Clust01_U2OS_Paxillin',    
     };
 
 % folder path of where to save main results
