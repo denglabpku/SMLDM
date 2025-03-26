@@ -42,7 +42,7 @@ mean_r0 = 1.4141*beads_PixelSize; % replace 1.4141 with your microscope's sigma 
 
 % import simSPT with time delay 1ms
 % simSPT code: ./simSPT -D1=0.03 -D2=2.0 -p1=0.5 -p2=0.5 -sigma=0.031 -dt=0.001 -n_traj=100000 -file=../simPSF/20230309_D2_p5_dt1ms.csv -seed=0
-simSPT_path = '/path/to/simSPTresults';
+simSPT_path = '/path/to/simSPT_generated_tracks';
 simSPT_file = [...
     % >>>>>>>> No localization error >>>>>>>
     "20231202_logDm3p0_pure_10kTraj_dt1ms.csv",...

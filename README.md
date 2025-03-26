@@ -1,10 +1,10 @@
-# SMLMM
+# SMLDM 
 
-Single-Molecule Localization and Mobility Microscopy
+Single Molecule Localization and Diffusivity Microscopy
 
 # Installation
 
-SMLMM has the following depencies:
+SMLDM has the following depencies:
 
 Python 3.7
 
@@ -29,21 +29,23 @@ conda install pytorch==1.13.0 torchvision==0.14.0 torchaudio==0.13.0 pytorch-cud
 
 # Train your own models
 
-You can download our pretrained models: the **UNet model** (checkpoint_UNet_epoch20.pth) and the **Deep-SnapTrack model** (MBX_20231220_110nmPix_rep2_epoch9.pth) from the provided OneDrive links. Please note that these models are trained under specific camera setups and experimental conditions. Depending on your own setup and data, you may need to retrain these models to achieve optimal performance for your application. Below is a guide to help you train your own models if needed.
+You can download our provided the pretrained U-Net model (`checkpoint_UNet_epoch20.pth`) and the pretrained Deep-SnapTrack model (`MBX_20231220_110nmPix_rep2_epoch9.pth`) from the zenodo repository https://zenodo.org/records/15089354. Please note that these models are trained under specific camera setups (camera pixel size 110 nm) and experimental conditions (exposure time 30 ms). Depending on your own setup and data, you recommend measure your microscopic point-spread-function using the fluorescent beads and generate simulated training dataset as explained below, and to retrain these models to achieve optimal performance for your application. 
 
 ## Step 1: simSnapshot
 
-A pipeline to convert ground truth trajectories into simulated images for training process. The tracks are generated using a pubished method called simSPT ([Tjian - Darzacq lab / simSPT · GitLab](https://gitlab.com/tjian-darzacq-lab/simSPT)). We generated a set trajectories with logarithmically increasing diffusion coefficient through [simSPT_script.txt](https://1drv.ms/t/s!ApPGm6eczDkKgUyfGX_uYKiVVq7R?e=s2iwdF) in the command line. For convenience, we simulated long tracks and segmented them into shorter segments suitable for the target exposure time. Notably, we modified the `betaUnit` parameter in the original `simSPT.c` file from 0 to 1 to count track lifetime in seconds.
+We developed a pipeline to convert the simulated Brownian diffusing trajectories into simulated molecule snapshot images together with its mask and track image as datasets for downstream model training. The molecule trajectories were generated using a pubished method called simSPT ([Tjian - Darzacq lab / simSPT · GitLab](https://gitlab.com/tjian-darzacq-lab/simSPT)). We generated a set of trajectories with logarithmically increasing diffusion coefficients using the command recorded in `simSPT_script.txt`. For convenience, we simulated long tracks with 1-ms time interval and segmented them into shorter segments matching the desired exposure time. Notably, we modified the `betaUnit` parameter in the original `simSPT.c` file from 0 to 1 to count track lifetime in seconds.
 
-Next, we generated training data pairs for the UNet model. First, we converted the x-y coordinates of the tracks into pixel positions and overlaid four tracks onto a single 32×32 image. The images were then binarized and convolved with a weight map to generate ground truth masks. To mimic real camera acquisition, we added Gaussian white noise and Poisson shot noise to the images and paired them with ground truth masks. This process can be executed using the provided script:
+We provided our simulated molecule trajectories under the zenodo repository https://zenodo.org/records/15089354.
+
+Next, we generated training datasets for the U-Net segmentation model. First, we placed four molecule trajectories into a single 32×32 image with a pixel size of 110 nm. The positions of the molecule trajectories were convolved with a Gaussian model of the microscopic point-spread function (PSF). The resulting matrix was then binned, rescaled to the desired signal-to-noise ratio (SNR), and augmented with both Gaussian white noise and Poisson shot noise to mimic experimental molecule snapshots. The mask for each molecule was defined as the region encompassing the top 95% of the total intensity signal. The simulated snapshot and corresponding mask images were paired to serve as the ground truth for U-Net training. This process can be executed using the following script:
 
 `step0_sim_4molecules_forUNet.m`
 
-For generating training data pairs for DeepSnapTrack, we converted the x-y coordinates of the tracks into pixel positions with 1/10 of the size used for UNet. Each track was overlaid onto a separate 320×320 image. The ground truth masks were defined as the top 95% of the total signal volume. Simulated images were then generated using the same noise augmentation method as in UNet, but resized to 32×32 pixels. This process can be executed using the provided script:
+To generate training data pairs for Deep-SnapTrack, we placed a single molecule trajectory into a 32×32 image with a pixel size of 110 nm and generated its snapshot image using the method described above. The molecule trajectories were then convolved with a 7×7 Gaussian kernel (σ = 1 pixel-width), and this convolution was evaluated at an 11-nm pixel width to produce a higher-resolution 320×320 track image. The final training dataset for Deep-SnapTrack consisted of paired simulated snapshot images and their corresponding track images. This process can be executed using the following script:
 
 `step0_sim_1molecule_forDeepSnapTrack.m`
 
-## Step 2: UNet training
+## Step 2: U-Net training
 
 After preparing single molecule snapshot images and corresponding masks according to **Step 0: Sim Snapshot**. Specify your path to data pairs in `step1-0_train_multiGPU.sh` by defining:
 
@@ -58,7 +60,7 @@ And define a data path where you save your checkpoint files:
 --dir_checkpoint ./checkpoints/ \
 ```
 
-Run the `.sh` file to generate customized UNet models.
+Run the `.sh` file to generate customized U-Net models.
 
 ## Step 3: Deep-SnapTrack training
 
@@ -77,11 +79,13 @@ And define a data path where you save your checkpoint files:
 
 Run the `.sh` file to generate customized Deep-SnapTrack models.
 
-# SMLMM data analysis
+# SMLDM data analysis
 
-## Step 1: UNet Segmentation
+We will use one ND2 image captured for Paxillin-Halo as the example to demonstrate the analysis pipeline. You can download this image file from the the zenodo repository https://zenodo.org/records/15089354.
 
-To do segmentation with UNet, specify your data path in the corresponding section of `step1-1_ND2batch_prediction.sh`:
+## Step 1: U-Net Segmentation
+
+To do segmentation with U-Net, specify your data path in the corresponding section of `step1-1_ND2batch_prediction.sh`:
 
     --model /path/to/your/model/checkpoint_UNet_epoch20.pth \
     --input /path/to/your/data/20240712_Clust01_U2OS_Paxillin_30p5ms_2kframe_001.nd2 \
@@ -93,13 +97,12 @@ To do segmentation with UNet, specify your data path in the corresponding sectio
 
 ### Do ThunderSTORM Localizations
 
-We use ThunderSTORM (https://github.com/zitmen/thunderstorm) to assist in selecting qualified snapshot from UNet result. To do this, you should first make sure you have download ThunderSTORM plugin in your imagej. Then, choose `Run Macro` and select `step2-1_IJmacro_ThunderSTORM.ijm`, which will open an interface for you to load raw images and define output path for localization result. To note, the previous step will create a sub folder named ThunderSTORM under "mask" folder:
+We use ThunderSTORM (https://github.com/zitmen/thunderstorm) to assist in selecting qualified snapshot from U-Net result, i.e. only one ThunderSTORM localization in a U-Net mask is kept as single-molecule snapshot for downstream analysis. To do this, please first install [ThunderSTORM](zitmen.github.io/thunderstorm/) plugin in your ImageJ. Then, choose `Run Macro` and select `step2-1_IJmacro_ThunderSTORM.ijm`, which will open an interface for you to load raw images and define output path for localization result. Please create a new folder called ThunderSTORM under the parent folder of previous output folder, and save the result of ThunderSTORM in this folder:
 
 ```
 /path/to/save/results/ThunderSTORM
 ```
-
-Your output path are suggested to be defined as this.
+After finish the ThunderSTORM step, move to `step2-2_script_snapshot_detection.m` to use ThunderSTORM localization filter the qualified single-molecule snapshots.
 
 ### Select Qualified Snapshots
 
@@ -114,7 +117,7 @@ WideField_subfolder = 'BF';
 % <<<<<<<<<<<<<<<<<<<< NUCLEUS SELECTION <<<<<<<<<<<<<<< %
 ```
 
-Next you have to specify your data path:
+Next, specify your data path:
 
 ```matlab
 % >>>>>>>>>>>>>>>>>>>> MOTION BLUR DETECTION PARAMETERS >>>>>>>>>>>>>>>>>>>> %
@@ -131,7 +134,7 @@ input_rawND2_prefix = {...
 % <<<<<<<<<<<<<<<<<<<< MOTION BLUR DETECTION PARAMETERS <<<<<<<<<<<<<<<<<<<<< %
 ```
 
-After finishing these settings, run `step2-2_script_snapshot_detection.m`. The output will be a file named `Blurdata_UNet_mask_MBX_20240620_epoch20_Ch1.mat`. Note that all names have to be defined in `input_rawND2_prefix` if your raw data contains multiple clusters.
+After finishing these settings, run `step2-2_script_snapshot_detection.m`. The output will be a file named `Blurdata_UNet_mask_MBX_20240620_epoch20_Ch1.mat`. Note that all names have to be defined in `input_rawND2_prefix` if your raw data contains multiple image sequence files.
 
 ## Step 3: Deep-SnapTrack
 
@@ -142,10 +145,10 @@ To do prediction with Deep-SnapTrack, specify the data path in the corresponding
 # directory of your DeepSnapTrack model
 weights_file = './checkpoints/MBX_20231220_110nmPix_rep2_epoch9.pth'
 
-# parent directory where you save UNet motion blur extracted mat folder
+# parent directory where you save U-Net motion blur extracted mat folder
 rootDir = '/path/to/save/results'
 
-# directory of UNet motion blur extracted mat folder
+# directory of U-Net motion blur extracted mat folder
 dataDir = [   
     '20240712_Clust01_U2OS_Paxillin_Cell01',
     ]
@@ -171,6 +174,35 @@ python step3-1_batch_prediction.py
 
 The output will be a CSV file named `UNet_mask_MBX_20240620_epoch20_Ch1_SR_pred_v3.csv`, saved in your input `dataDir`, along with your previously generated MAT file named `Blurdata_UNet_mask_MBX_20240620_epoch20_Ch1.mat`.
 
+The csv file contains:
+
+| Column            | Description                                                                 | Unit                     |
+|-----------------|-----------------------------------------------------------------------------|--------------------------|
+| Frame           | Frame number                                                                | -                       |
+| PSF_idx         | Index of snapshot                                                           | -                       |
+| Xpos            | X coordinate of molecule                                 | Image pixel              |
+| Ypos            | Y coordinate of molecule                                 | Image pixel              |
+| TotalPhoton     | Estimated total photon number (unit: photons)                               | Photons                  |
+| Intensity       | Intensity value from elliptical Gaussian fitting                | a.u.                     |
+| Background      | Background value from elliptical Gaussian fitting                | a.u.                     |
+| EllipticityIdx  | Ellipticity index (no longer used, please ignore)                            | -                       |
+| Angle           | Angle of ellipticity (no longer used, please ignore)                        | -                       |
+| SNR             | Signal-to-noise ratio                                       | Decibel                  |
+| COV             | Covariance (another measurement for SNR)                                    | -                       |
+| UNetArea        | Molecule snapshot area from U-Net masks                   | Image pixel              |
+| SRArea          | Molecule pseudo-track area, can convert to diffusion coeffcient                     | 1/10 of image pixel      |
+| D          | Molecule diffusion coefficient                      | um^2/s      |
+
+The mat file contains:
+| Variable Name       | Description                                                                 | Variable Type |
+|---------------------|-----------------------------------------------------------------------------|---------------|
+| UNet_model_folder   | Path of U-Net masks                                                         | cell          |
+| cell_PSF            | Stores the pixel coordinate and pixel intensity of detected snapshots       | struct        |
+| filter              | Filter parameters defined in step2-2_script_snapshot_detection.m          | struct        |
+| impars              | Image acquisition parameters defined in step2-2_script_snapshot_detection.m | struct        |
+| input_path          | Raw image path                                                              | char          |
+| input_rawND2_prefix | The prefix of image used for naming files                                   | char          |
+| output_path         | Path to save result                                                         | char          |
 ### Step 4: MPALM rendering
 
  You can get the final visualization result by uploading the two files generated from the last step` UNet_mask_MBX_20240620_epoch20_Ch1_SR_pred_v3.csv`  and `Blurdata_UNet_mask_MBX_20240620_epoch20_Ch1.mat `to the MATLAB app provided under ./step4_MPALM_rendering/step4_main_mobilityPALM.mlapp. For the user guide of this app, please see ./step4_MPALM_rendering/Users Guide.docx.

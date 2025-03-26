@@ -266,14 +266,14 @@ for iSamp, nowDir in enumerate(dataDir):
                                         df_temp = pd.DataFrame({'Frame': iFrame, 'PSF_idx': iPSF, 'Xpos': x1, 'Ypos': y1,
                                                         'TotalPhoton': tab_psf_fitresult.TotalPhoton[irow], 'Intensity': tab_psf_fitresult.Intensity[irow],
                                                         'Background': tab_psf_fitresult.Background[irow],'EllipticityIdx': tab_psf_fitresult.EllipticityIdx[irow],'Angle': tab_psf_fitresult.Angle[irow], 
-                                                        'SNR': tab_psf_fitresult.SNR[irow],'COV': tab_psf_fitresult.COV[irow],'UNetArea': UNetArea, 'SRArea': SRArea}, index=[0])
+                                                        'SNR': tab_psf_fitresult.SNR[irow],'COV': tab_psf_fitresult.COV[irow],'UNetArea': UNetArea, 'SRArea': SRArea, 'D': guess_D}, index=[0])
                                         df_temp.to_csv(path.join(csv_save_path, sr_fileName), header=False, index=False, mode='a')
                                     else:
                                         # Add a new row to the DataFrame
                                         df_temp = pd.DataFrame({'Frame': iFrame, 'PSF_idx': iPSF, 'Xpos': tab_psf_fitresult.Xpos[irow], 'Ypos': tab_psf_fitresult.Ypos[irow],
                                                         'TotalPhoton': tab_psf_fitresult.TotalPhoton[irow], 'Intensity': tab_psf_fitresult.Intensity[irow],
                                                         'Background': tab_psf_fitresult.Background[irow],'EllipticityIdx': tab_psf_fitresult.EllipticityIdx[irow],'Angle': tab_psf_fitresult.Angle[irow], 
-                                                        'SNR': tab_psf_fitresult.SNR[irow],'COV': tab_psf_fitresult.COV[irow],'UNetArea': UNetArea, 'SRArea': SRArea}, index=[0])
+                                                        'SNR': tab_psf_fitresult.SNR[irow],'COV': tab_psf_fitresult.COV[irow],'UNetArea': UNetArea, 'SRArea': SRArea, 'D': guess_D}, index=[0])
                                         df_temp.to_csv(path.join(csv_save_path, sr_fileName), header=False, index=False, mode='a')                             
                                 irow += 1
                         iFrame += 1
@@ -375,14 +375,14 @@ for iSamp, nowDir in enumerate(dataDir):
                                         df_temp = pd.DataFrame({'Frame': iFrame, 'PSF_idx': iPSF, 'Xpos': x1, 'Ypos': y1,
                                                         'TotalPhoton': tab_psf_fitresult.TotalPhoton[irow], 'Intensity': tab_psf_fitresult.Intensity[irow],
                                                         'Background': tab_psf_fitresult.Background[irow],'EllipticityIdx': tab_psf_fitresult.EllipticityIdx[irow],'Angle': tab_psf_fitresult.Angle[irow], 
-                                                        'SNR': tab_psf_fitresult.SNR[irow],'COV': tab_psf_fitresult.COV[irow],'UNetArea': UNetArea, 'SRArea': SRArea}, index=[0])
+                                                        'SNR': tab_psf_fitresult.SNR[irow],'COV': tab_psf_fitresult.COV[irow],'UNetArea': UNetArea, 'SRArea': SRArea, 'D': guess_D}, index=[0])
                                         df_temp.to_csv(path.join(csv_save_path, sr_fileName), header=False, index=False, mode='a')
                                     else:
                                         # Add a new row to the DataFrame
                                         df_temp = pd.DataFrame({'Frame': iFrame, 'PSF_idx': iPSF, 'Xpos': tab_psf_fitresult.Xpos[irow], 'Ypos': tab_psf_fitresult.Ypos[irow],
                                                         'TotalPhoton': tab_psf_fitresult.TotalPhoton[irow], 'Intensity': tab_psf_fitresult.Intensity[irow],
                                                         'Background': tab_psf_fitresult.Background[irow],'EllipticityIdx': tab_psf_fitresult.EllipticityIdx[irow],'Angle': tab_psf_fitresult.Angle[irow], 
-                                                        'SNR': tab_psf_fitresult.SNR[irow],'COV': tab_psf_fitresult.COV[irow],'UNetArea': UNetArea, 'SRArea': SRArea}, index=[0])
+                                                        'SNR': tab_psf_fitresult.SNR[irow],'COV': tab_psf_fitresult.COV[irow],'UNetArea': UNetArea, 'SRArea': SRArea, 'D': guess_D}, index=[0])
                                         df_temp.to_csv(path.join(csv_save_path, sr_fileName), header=False, index=False, mode='a')                                   
                                 irow += 1
                         iFrame += 1    
