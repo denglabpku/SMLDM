@@ -14,18 +14,55 @@ MATLAB 2021 or higher version
 
 Hardware: NVIDIA GPU supporting CUDA 11.7, we use NVIDIA Quadro P4000.
 
-We recommend create a new conda environment with Python version 3.7, using the command below. After activating the conda environment, cd to the directory created from the Github clone command, and use below command to install the dependent packages from requirements.txt.
+### Seting up a conda environment
 
-```
+We recommend create a new conda environment with Python version 3.7. After activating the conda environment, cd to the directory created from the Github clone command, and use below command to install the dependent packages from requirements.txt.
+
+```bash
 pip install -r requirements.txt
 ```
 
-For deep learning training and inference, we use CUDA 11.7 with PyTorch 1.13.0. You can install PyTorch using the following command:
+For deep learning training and inference, we use CUDA 11.7 with PyTorch 1.13.0. In the activated conda environment, you can install PyTorch using the following command:
 
-```
+```bash
 # CUDA 11.7
 conda install pytorch==1.13.0 torchvision==0.14.0 torchaudio==0.13.0 pytorch-cuda=11.7 -c pytorch -c nvidia
 ```
+
+### Setting Up CUDA Environment Path
+
+Please download the CUDA Toolkit (11.7) from Nvidia website https://developer.nvidia.com/cuda-11-7-0-download-archive and install it in your system according to the website instruction.
+
+To enable PyTorch to run on the GPU, you need to add the CUDA toolkit to the system environment path. In linux system, follow these steps to create activate and deactivate scripts for managing the CUDA environment variables:
+
+1. **Create the Activation Script**
+   - Create the directory for activation scripts:
+     ```bash
+     mkdir -p $CONDA_PREFIX/etc/conda/activate.d
+     ```
+   - Create a file named `env_vars.sh` in the activation directory with the following content:
+     ```bash
+     #!/bin/sh
+     # Environment variable for CUDA 11.7
+     export PATH=/usr/local/cuda-11.7/bin${PATH:+:${PATH}}
+     export LD_LIBRARY_PATH=/usr/local/cuda-11.7/lib64${LD_LIBRARY_PATH:+:${LD_LIBRARY_PATH}}
+     ```
+
+2. **Create the Deactivation Script**
+   - Create the directory for deactivation scripts:
+     ```bash
+     mkdir -p $CONDA_PREFIX/etc/conda/deactivate.d
+     ```
+   - Create a file named `env_vars.sh` in the deactivation directory with the following content:
+     ```bash
+     #!/bin/sh
+     # Unset environment variable for CUDA 11.7
+     export PATH=${PATH#/usr/local/cuda-11.7/bin:}
+     unset LD_LIBRARY_PATH
+     ```
+
+These scripts will automatically set and unset the CUDA environment variables when you activate and deactivate your conda environment, respectively.
+
 
 # Train your own models
 
