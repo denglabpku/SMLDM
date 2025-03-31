@@ -19,7 +19,7 @@
 %% INTENTIONALLY KEEP BLANK
 %% INTENTIONALLY KEEP BLANK
 clc; clear; close all;
-addpath(genpath('./SMLMM/step2_single_molecule_selection')) % add bio-formats MATLAB Toolbox to the search path
+addpath(genpath('./SMLDM/step2_single_molecule_selection')) % add bio-formats MATLAB Toolbox to the search path
 %% DEFINE PARAMETERS
 
 % >>>>>>>>>>>>>>>>>>>> NUCLEUS SELECTION (LARGE FOV ONLY) >>>>>>>>>>>>>>> %
@@ -152,12 +152,12 @@ disp('           | |_| | |  | | |_) /  \')
 disp('            \___/|_|  |_|____/_/\_\')
 disp('============================================')
 disp('Motion Blur Extraction from Single Molecules');
-disp(' Designed by Zuhui Wang, Peking University');
-disp('     Current version: V2p2 MPALM-BULK sequence');
+disp('Designed by Zuhui Wang, Peking University');
+disp('Current version: V2p2 MPALM-BULK sequence');
 disp('============================================')
 disp('============================================')
 
-NumWorkers = 28;
+NumWorkers = 4;
 parpool('local', NumWorkers)
 
 for iSamp = 1:length(input_rawND2_prefix)

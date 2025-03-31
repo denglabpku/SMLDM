@@ -128,7 +128,7 @@ for iSamp, nowDir in enumerate(dataDir):
     # Create a dictionary with the column names as keys and empty lists as values
     data = {
         'Frame': [], 'PSF_idx': [], 'Xpos': [], 'Ypos': [], 'TotalPhoton': [], 'Intensity': [],
-        'Background': [],'EllipticityIdx': [],'Angle': [], 'SNR': [],'COV': [],'UNetArea': [], 'SRArea': []
+        'Background': [],'EllipticityIdx': [],'Angle': [], 'SNR': [],'COV': [],'UNetArea': [], 'SRArea': [], 'D': []
     }
 
     # Create a DataFrame from the dictionary

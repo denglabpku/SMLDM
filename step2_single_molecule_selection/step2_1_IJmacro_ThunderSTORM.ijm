@@ -11,7 +11,7 @@ list = getFileList(dir_processing);
 channel_number = 1;
 
 for (i = 0; i < list.length; i++) { //list.length
-	if (endsWith(list[i], ".nd2") && list[i].indexOf("30p5ms") != -1 && list[i].indexOf("Cell05") != -1) {
+	if (endsWith(list[i], ".nd2") && list[i].indexOf("30p5ms") != -1) {
 	// if (endsWith(list[i], ".tif")) {
 		img_dir = dir_processing + list[i];
 		sav_img_dir = dir_saving + list[i];

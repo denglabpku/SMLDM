@@ -134,7 +134,7 @@ To do segmentation with U-Net, specify your data path in the corresponding secti
 
 ### Do ThunderSTORM Localizations
 
-We use ThunderSTORM (https://github.com/zitmen/thunderstorm) to assist in selecting qualified snapshot from U-Net result, i.e. only one ThunderSTORM localization in a U-Net mask is kept as single-molecule snapshot for downstream analysis. To do this, please first install [ThunderSTORM](zitmen.github.io/thunderstorm/) plugin in your ImageJ. Then, choose `Run Macro` and select `step2-1_IJmacro_ThunderSTORM.ijm`, which will open an interface for you to load raw images and define output path for localization result. Please create a new folder called ThunderSTORM under the parent folder of previous output folder, and save the result of ThunderSTORM in this folder:
+We use ThunderSTORM (https://github.com/zitmen/thunderstorm) to assist in selecting qualified snapshot from U-Net result, i.e. only one ThunderSTORM localization in a U-Net mask is kept as single-molecule snapshot for downstream analysis. To do this, please first install [ThunderSTORM](zitmen.github.io/thunderstorm/) plugin in your ImageJ. Then, choose `Run Macro` and select `step2-1_IJmacro_ThunderSTORM.ijm`, which will open an interface for you to load raw images and define output path for localization result. Edit the line 14 to replace your file prefix and suffix, so that the script can read all your image files. Before running the script, please create a new folder called ThunderSTORM under the parent folder of previous output folder, and save the result of ThunderSTORM in this folder:
 
 ```
 /path/to/save/results/ThunderSTORM
@@ -158,7 +158,7 @@ Next, specify your data path:
 
 ```matlab
 % >>>>>>>>>>>>>>>>>>>> MOTION BLUR DETECTION PARAMETERS >>>>>>>>>>>>>>>>>>>> %
-% directory of your raw image data (ND2 file)
+% directory of where your raw image data located
 input_path = '/path/to/your/data/';
 
 % the parent folder of motion blur detection and analysis
