@@ -1,6 +1,6 @@
-/__pycache__/
+__pycache__/
 /wandb/
 /archive/
 
 # Ignore Python bytecode cache directories
-**/__pycache__/**
+**/__pycache__/

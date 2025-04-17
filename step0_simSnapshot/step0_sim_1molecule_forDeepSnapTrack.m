@@ -128,8 +128,8 @@ StartIdx = 1;
 target_exposure = [30]; % unit ms
 
 % maximal number of generated image pair at given D and exposure time
-windowSize_array = [ones(1,10)*50,ones(1,6)*10,ones(1,9)*25,5,2];
-max_imgpair_array = [ones(1,10)*1000,ones(1,6)*1500,ones(1,11)*500];
+windowSize_array = [ones(1,16)*5,ones(1,11)*1];
+max_imgpair_array = [ones(1,16)*3000,ones(1,11)*3000];
 
 % parent directory to save image pairs
 img_pair_saveDir = '/path/to/save/simulated_dataset_forDeepSnapTrack';
