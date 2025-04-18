@@ -1,12 +1,3 @@
-# import debugpy
-
-# # 5678 is the default attach port in the VS Code debug configurations. Unless a host and port are specified, host defaults to 127.0.0.1
-# debugpy.listen(5678)
-# print("Waiting for debugger attach")
-# debugpy.wait_for_client()
-# debugpy.breakpoint()
-# print('break on this line')
-
 import torch.multiprocessing
 torch.multiprocessing.set_sharing_strategy('file_system') # these two lines are important to avoid file descriptor errors
 
@@ -46,19 +37,6 @@ class IndividualNormalize(object):
         
         return img
 
-# class IndividualNormalize(object):
-#     def __call__(self, sample):
-#         img = np.array(sample)
-
-#         # Assuming grayscale images
-#         img = img.reshape(1, img.shape[0], img.shape[1])  # Reshape to (1, height, width)
-        
-#         mean_img = np.mean(img, axis=(1, 2))
-#         std_img = np.std(img, axis=(1, 2))
-#         img = (img - mean_img[:, None, None]) / std_img[:, None, None]
-
-#         return img
-
 class BasicDataset(Dataset):
     def __init__(self, images_dir: str, mask_dir: str, mask_suffix: str = '_trackHeatmap', transform=None):
         self.images_dir = Path(images_dir)
@@ -84,16 +62,11 @@ class BasicDataset(Dataset):
         img = Image.open(img_file[0]).convert('I')  # Convert to grayscale
 
         # Upsample the image to match the size of the mask using 'nearest' interpolation
-        img = img.resize(mask.size, resample=Image.NEAREST)
-        # img = img.resize(mask.size, resample=Image.BILINEAR)
+        img = img.resize(mask.size, resample=Image.NEAREST)        
         
         if self.transform is not None:
             img = self.transform(img)
-            mask = self.transform(mask)
-        
-        # # After testing, should normalize both img and mask
-        # mask = np.array(mask)
-        # mask = mask.reshape(1, mask.shape[0], mask.shape[1])  # Reshape to (1, height, width)
+            mask = self.transform(mask)        
 
         return {
             'image': torch.as_tensor(img.copy()).float().contiguous(),
@@ -112,9 +85,7 @@ def train_model(
         lr,
         run,
         local_rank,
-        gpus):
-    
-    # local_rank = int(os.environ["LOCAL_RANK"])
+        gpus):    
     
     # Check to see if local_rank is 0
     is_master = local_rank == 0
@@ -134,14 +105,10 @@ def train_model(
     n_val = int(len(dataset) * val_percent)
     n_train = len(dataset) - n_val
     train_set, val_set = random_split(dataset, [n_train, n_val], generator=torch.Generator().manual_seed(0))
-    # train_set = dataset
-    # val_set = dataset
 
-    # 3. Create data loaders
-    # loader_args = dict(batch_size=batch_size, num_workers=os.cpu_count(), pin_memory=True)
+    # 3. Create data loaders    
     # Determine a suitable number of workers based on system resources
-    num_workers = min(os.cpu_count(), 4)  # Limit to a maximum of 8 workers
-    loader_args = dict(batch_size=batch_size, num_workers=num_workers, pin_memory=True)
+    loader_args = dict(batch_size=batch_size, num_workers=1, pin_memory=True)
     train_loader = DataLoader(train_set, shuffle=True, **loader_args)
     val_loader = DataLoader(val_set, shuffle=False, drop_last=True, **loader_args)
  
@@ -149,15 +116,12 @@ def train_model(
     input_dim = (batch_size, 1, 320, 320)
 
     # Instantiate the model and set up criterion, optimizer, and scheduler
-    # model = buildModel().to(local_rank)
-    # model.to(device) # Move the model to the selected device
     criterion = L1L2loss(input_shape=input_dim,device=local_rank)
     optimizer = optim.Adam(model.parameters(), lr=lr)
     factor=0.5
     patience=5
     min_lr=0.00005
     scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=factor, patience=patience, min_lr=min_lr)
-    # change_lr = ReduceLROnPlateau(monitor='val_loss', factor=0.1, patience=5, min_lr=0.00005) # from Colab Deep Storm
 
     # Wrap the model
     model = nn.parallel.DistributedDataParallel(model, device_ids=[local_rank],output_device=local_rank)
@@ -232,14 +196,6 @@ def train_model(
                 t -= 1
                 
                 if t == 1 and do_log:
-                    # run.log({"step val loss": val_loss.item(),
-                    #          "val step": global_val_step,
-                    #         'images': [wandb.Image(X_test_norm[i].cpu()) for i in range(min(5, X_test_norm.shape[0]))],
-                    #         'masks': {
-                    #             'true': [wandb.Image(Y_test[i].float().cpu()) for i in range(min(5, Y_test.shape[0]))],
-                    #             'pred': [wandb.Image(val_output[i, 0].cpu()) for i in range(min(5, val_output.shape[0]))],# Assuming val_output is a single-channel image
-                    #             },
-                    #         })
                     # Determine number of samples available
                     num_samples = min(X_test_norm.shape[0], Y_test.shape[0], val_output.shape[0])
                     
@@ -272,7 +228,8 @@ def train_model(
     cleanup()
 
     # Finish the run
-    wandb.finish()
+    if do_log:
+        wandb.finish()
         
     # Inform user training ended
     print('Training Completed!')
@@ -281,12 +238,6 @@ def train_model(
 
 def setup_run(args,local_rank):
     if args.log_all:
-        run = wandb.init(
-            project=args.project,
-            group="DDP",
-            anonymous='must',
-        )
-    else:
         if local_rank == 0:
             run = wandb.init(
                 project=args.project,
@@ -295,6 +246,8 @@ def setup_run(args,local_rank):
             )
         else:
             run = None
+    else:
+        run = None
     return run
 
 def cleanup():
@@ -319,7 +272,7 @@ if __name__ == '__main__':
 
     # wandb args
     parser.add_argument('--project', type=str, help="Names of project in wandb")
-    parser.add_argument("--log_all", action="store_true", help="flag to log in all processes, otherwise only in rank0")
+    parser.add_argument("--log_all", action="store_true", help="flag to do logging using wandb")
     parser.add_argument("--RunName", type=str, help="Name of run in your wandb project")
     parser.add_argument('--gpus', type=int, default=1, help='Number of gpus to use')
 

@@ -1,12 +1,3 @@
-# import debugpy
-
-# # 5678 is the default attach port in the VS Code debug configurations. Unless a host and port are specified, host defaults to 127.0.0.1
-# debugpy.listen(5678)
-# print("Waiting for debugger attach")
-# debugpy.wait_for_client()
-# debugpy.breakpoint()
-# print('break on this line')
-
 import numpy as np
 import torch
 import torch.nn as nn
@@ -89,10 +80,12 @@ def train_model(
         batch_size,
         epochs,
         lr,
+        run=None,
         weight_file=None):
     
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     print(f'Using device {device}')
+    do_log = run is not None
 
     transform_norm = IndividualNormalize()
  
@@ -104,11 +97,9 @@ def train_model(
     n_val = int(len(dataset) * val_percent)
     n_train = len(dataset) - n_val
     train_set, val_set = random_split(dataset, [n_train, n_val], generator=torch.Generator().manual_seed(0))
-    # train_set = dataset
-    # val_set = dataset
 
     # 3. Create data loaders
-    loader_args = dict(batch_size=batch_size, num_workers=os.cpu_count(), pin_memory=True)
+    loader_args = dict(batch_size=batch_size, num_workers=1, pin_memory=True)
     train_loader = DataLoader(train_set, shuffle=True, **loader_args)
     val_loader = DataLoader(val_set, shuffle=False, drop_last=True, **loader_args)
 
@@ -122,8 +113,7 @@ def train_model(
     factor=0.5
     patience=5
     min_lr=0.00005
-    scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=factor, patience=patience, min_lr=min_lr)
-    # change_lr = ReduceLROnPlateau(monitor='val_loss', factor=0.1, patience=5, min_lr=0.00005) # from Colab Deep Storm
+    scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=factor, patience=patience, min_lr=min_lr)    
 
     if weight_file is not None:
         # Ensure that the model and state_dict share similar device placement
@@ -144,12 +134,11 @@ def train_model(
     # Inform user training begun
     print('Training model...')
 
-    # (Initialize logging)
-    experiment = wandb.init(project='Deep-STORM', resume='allow', anonymous='must')
-    experiment.config.update(
-        dict(epochs=epochs, batch_size=batch_size, learning_rate=lr, val_percent=val_percent,
-             factor = factor, patience = patience, min_learning_rate = min_lr)
-    )
+    # Continue logging
+    if do_log:
+        run.config.update(
+            dict(val_percent=val_percent,factor = factor, patience = patience, min_learning_rate = min_lr)
+        )
 
     global_train_step = 0
     global_val_step = 0
@@ -171,8 +160,7 @@ def train_model(
                 X_train_norm, Y_train = batch['image'].to(device), batch['mask'].to(device)
 
                 optimizer.zero_grad()
-                output = model(X_train_norm)
-                # loss = criterion(output, Y_train)
+                output = model(X_train_norm)                
                 loss = criterion(Y_train, output)
                 loss.backward()
                 optimizer.step()
@@ -183,15 +171,15 @@ def train_model(
                 pbar.update()
 
                 t -= 1
-                if t == 1:
-                    experiment.log({
+                if t == 1 and do_log:
+                    run.log({
                     "step train loss": loss.item(),
                     "train step": global_train_step,
                     'learning rate': optimizer.param_groups[0]['lr'],  # Log the current learning rate
                     })
         
-        experiment.log({"epoch": epoch, 
-                        "epoch train_loss": np.mean(batch_train_loss)})
+        if do_log:
+            run.log({"epoch": epoch, "epoch train_loss": np.mean(batch_train_loss)})
 
         # Evaluation mode
         model.eval()
@@ -215,8 +203,8 @@ def train_model(
 
                 t -= 1
 
-                if t == 1:
-                    experiment.log({
+                if t == 1 and do_log:
+                    run.log({
                         "step val loss": val_loss.item(),
                         "val step": global_val_step,
                         'images': [wandb.Image(X_test_norm[i].cpu()) for i in range(min(5, X_test_norm.shape[0]))],
@@ -233,16 +221,31 @@ def train_model(
             Path(dir_checkpoint).mkdir(parents=True, exist_ok=True)
             best_val_loss = mean_val_loss
             torch.save(model.state_dict(), f'{dir_checkpoint}/{weights_name}_epoch{epoch}.pth')
-            experiment.log({"epoch": epoch, 
-                            "epoch val loss": mean_val_loss})
+            if do_log:
+                run.log({"epoch": epoch, "epoch val loss": mean_val_loss})
         
     # Finish the run
-    wandb.finish()
+    if do_log:
+        wandb.finish()
         
     # Inform user training ended
     print('Training Completed!')
 
     return
+
+def setup_run(args):
+    if args.log_all:        
+        run = wandb.init(
+            project=args.project,
+            anonymous='must',
+            name = args.RunName,
+        )
+        run.config.update(
+            dict(epochs=args.epochs, batch_size=args.batch_size, learning_rate=args.lr)
+        )
+    else:
+        run = None
+    return run
 
 if __name__ == '__main__':
 
@@ -263,12 +266,20 @@ if __name__ == '__main__':
     parser.add_argument('--learning-rate', '-l', metavar='LR', type=float, default=1e-3, help='Learning rate', dest='lr')
     parser.add_argument('--weight_file', type=str, help="path to load previous model weights")
 
+    # wandb args
+    parser.add_argument('--project', type=str, help="Names of project in wandb")
+    parser.add_argument("--log_all", action="store_true", help="flag to do logging using wandb")
+    parser.add_argument("--RunName", type=str, help="Name of run in your wandb project")
+
     # parse the input arguments
     args = parser.parse_args()
     dir_img = Path(args.dir_img)
     dir_mask = Path(args.dir_mask)
     dir_checkpoint = Path(args.dir_checkpoint)
     weights_name = Path(args.weights_name)
+
+    # Initialize logging
+    wandb_run = setup_run(args)
     
     # run the training process
     train_model(dir_img = dir_img,
@@ -278,6 +289,7 @@ if __name__ == '__main__':
                 batch_size = args.batch_size,
                 epochs = args.epochs,
                 lr = args.lr,
+                run = wandb_run,
                 weight_file = args.weight_file)
     
 
