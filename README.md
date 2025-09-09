@@ -1,3 +1,4 @@
+![MPALM logo](./step4_MPALM_rendering/Logo.jpg)
 # SMLDM 
 
 Single Molecule Localization and Diffusivity Microscopy
