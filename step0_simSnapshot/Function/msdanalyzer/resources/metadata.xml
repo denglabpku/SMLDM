@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<addOn>
+  <identifier>e5977963-4a80-11e4-9553-005056977bd0</identifier>
+  <displayType>Collection</displayType>
+  <translatedDisplayType>
+    <en_US>Collection</en_US>
+    <ja_JP>コレクション</ja_JP>
+    <ko_KR>컬렉션</ko_KR>
+    <zh_CN>集合</zh_CN>
+  </translatedDisplayType>
+  <name>Mean square displacement analysis of particles trajectories</name>
+  <author>Jean-Yves Tinevez</author>
+  <version>1.3.0.0</version>
+  <downloadUrl>https://www.mathworks.com/matlabcentral/mlc-downloads/downloads/e5977963-4a80-11e4-9553-005056977bd0/6e8a1355-fecf-26e9-af39-2e9fa9c5a164/packages/zip?src=addons_ml_desktop_install&amp;profile_id=16617297&amp;license=40504596&amp;release_family=R2023b</downloadUrl>
+  <licenseUrl>https://addons.mathworks.com/registry/v1/e5977963-4a80-11e4-9553-005056977bd0/1.3.0.0/-/license</licenseUrl>
+  <previewImageUrl>https://www.mathworks.com/responsive_image/160/120/0/0/0/cache/matlabcentral/mlc-downloads/downloads/submissions/40692/versions/4/screenshot.jpg</previewImageUrl>
+  <releaseNotesUrl>https://www.mathworks.com/add-ons/e5977963-4a80-11e4-9553-005056977bd0/6e8a1355-fecf-26e9-af39-2e9fa9c5a164/releaseNotes</releaseNotesUrl>
+  <installationFolder>Collections</installationFolder>
+</addOn>

@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<addonCore>
+  <label>Mean square displacement analysis of particles trajectories</label>
+  <version>1.3.0.0</version>
+  <type>zip</type>
+  <identifier>e5977963-4a80-11e4-9553-005056977bd0</identifier>
+  <createdBy name="Jean-Yves Tinevez"/>
+  <image>resources/screenshot.png</image>
+</addonCore>
