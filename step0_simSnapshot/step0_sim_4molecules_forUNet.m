@@ -1,17 +1,16 @@
 % Script to simulate snapshot of molecules using simSPT trajectory and
-% save noisy snapshot and binary mask molecule image pairs
+% save noisy snapshot and binary mask of molecule molecule snapshot as image pair
 
 %% DESCRIPTION
 % 1) Simulate snapshot of molecules using simSPT trajectory (simulation
 % time gap 1ms). One snapshot is generated from one trajectory with
-% desired track length from simSPT. Then, save the snapshot and sharp
-% (immobile) molecule image pair into one image and can be used as the
+% desired track length from simSPT. Then, save the snapshot and binary
+% mask of molecule snapshot as image pair and can be used as the
 % ground truth datasets for training networks. The pixelized image pair
 % have the exactly 0.11um/pix size.
 % 2) A Gaussian noise and Possion modeled shot-noise is added into simulated snapshot.
 
 % Obtain your microscopy PSF's standard deviation from extract_psf.ipynb.
-% Dependency: bfmatlab >6.6.0; msdanalyzer from matlab add-on market.
 
 % Reference:
 % simSPT: "https://gitlab.com/tjiandarzacq-lab/simSPT" from Hansen, Anders S., Iryna Pustova, Claudia Cattoglio, Robert Tjian, and Xavier Darzacq. “CTCF and Cohesin Regulate Chromatin Loop Stability with Distinct Dynamics.” ELife 6 (May 3, 2017): e25776. https://doi.org/10.7554/eLife.25776. 
@@ -24,14 +23,15 @@
 %% INTENTIONALLY KEEP BLANK
 
 close all; clear;clc;
-addpath(genpath('./SMLMM/step0_simSnapshot'),'-end')
-addpath(genpath('./MATLAB/msdanalyzer'),'-end')
+[folderPath,~,~] = fileparts(mfilename('fullpath'));
+addpath(genpath(folderPath)) % add folder of step1 to the search path
 
 % change your desired imaging parameters
 target_pixelSize = 0.11; % desired simulated camera pixel size 0.11 or 0.16, um
-background_mean = [1000 3000]; %1152; %500; %1761;% 1152;
-background_std = [400 600];%283; %40; %409;% 283;
-good_snr_range = [19 35]; 
+background_mean = [1000 3000]; % mean value of background, unit ADU, can obtain from ImageJ by measuring the mean value of background region
+background_std = [400 600]; % std value of background, unit ADU, can obtain from ImageJ by measuring the std value of background region
+good_snr_range = [19 35]; % SNR range for molecule detections, unit dB
+background_offset = 500; % background offset of camera when no incident photon on camera
 save_MSD = false; % save MSD of each trajectories
 PhotonConversionRate = 0.9398923112; % (0.5e/ADU, EMGain300, QE at 660nm:0.9398923112) (0.5e/ADU, EMGain300, QE at 582nm:0.9696909185)
 
@@ -43,7 +43,6 @@ mean_r0 = 1.4141*beads_PixelSize; % replace 1.4141 with your microscope's sigma 
 
 %% Simulate snapshot from simSPT
 % import simSPT with time delay 1ms
-% simSPT code: ./simSPT -D1=0.03 -D2=2.0 -p1=0.5 -p2=0.5 -sigma=0.031 -dt=0.001 -n_traj=100000 -file=../simPSF/20230309_D2_p5_dt1ms.csv -seed=0
 simSPT_path = '/path/to/simSPT_generated_tracks';
 simSPT_file = [...
     % >>>>>>>> No localization error >>>>>>>
@@ -135,9 +134,6 @@ img_pair_saveDir = '/path/to/save/simulated_dataset_forUNet';
 mkdir(fullfile(img_pair_saveDir));
 mkdir(fullfile(img_pair_saveDir,'imgs'));
 mkdir(fullfile(img_pair_saveDir,'masks'));
-% mkdir(fullfile(img_pair_saveDir,'tracks'));
-% mkdir(fullfile(img_pair_saveDir,'trackHeatmap'));
-% mkdir(fullfile(img_pair_saveDir,'locHeatmap'));
 
 % save MSD of each images
 if save_MSD
@@ -222,11 +218,7 @@ for iSPT = 1:length(simSPT_file)
 
         good_noisy_pix_merge_z_snr = nan(length(now_track_cell),1);
         good_noisy_pix_merge_z_bkmean = nan(length(now_track_cell),1);
-        good_noisy_pix_merge_z_bksigma = nan(length(now_track_cell),1);
-        % bad_noisy_pix_merge_z_snr = nan(length(now_track_cell),1);
-        % bad_noisy_pix_merge_z_bkmean = nan(length(now_track_cell),1);
-        % bad_noisy_pix_merge_z_bksigma = nan(length(now_track_cell),1);
-        % sum_jump_square = nan(length(now_track_cell),1);
+        good_noisy_pix_merge_z_bksigma = nan(length(now_track_cell),1);        
 
         % parfor_progress(length(now_track_cell));
         progressbarText(0);
@@ -286,25 +278,13 @@ for iSPT = 1:length(simSPT_file)
             
                 f = @(I,r0,m,x0,y0,x,y) I * exp(-(1/(2*r0^2))*((y - y0).^2 + (x - x0).^2)) + m;
             
-                merge_z = zeros(length(Ygrid),length(Xgrid));
-                % tempSharp_z = zeros(length(Ygrid),length(Xgrid),height(now_track)); % store instant frame intensity
+                merge_z = zeros(length(Ygrid),length(Xgrid));                
     
                 for i = 1:height(now_track)
-                    
-                    % noise_z = zeros(length(Ygrid),length(Xgrid)); % no noise consider the ideal situation
-                    % rand_I = mean_I;
-                    rand_I = 1;
-                    % rand_I = normrnd(mean_I/10,sigma_I/100);
-                    % rand_r0 = normrnd(mean_r0,sigma_r0);
+                                        
+                    rand_I = 1;                    
                     rand_r0 = mean_r0;
-                    rand_m = 0; % no background consider the ideal situation
-            
-                    % while (rand_I < 0 || rand_r0  < 0 || rand_m < 0 )
-                    %     rand_I = normrnd(mean_I/10,sigma_I/100);
-                    %     % rand_r0 = normrnd(mean_r0,sigma_r0);
-                    %     rand_r0 = mean_r0;
-                    %     rand_m = 0; 
-                    % end
+                    rand_m = 0;                       
             
                     z = feval(f,rand_I,rand_r0,rand_m,now_track.x(i),now_track.y(i),Xgrid,Ygrid);
                     
@@ -387,14 +367,12 @@ for iSPT = 1:length(simSPT_file)
 
                 % Generate a single random number from the uniform distribution
                 SNR = good_snr_range(1) + (good_snr_range(2)-good_snr_range(1))*rand(1,1);                
-                bk_m = background_mean(1) + (background_mean(2)-background_mean(1))*rand(1,1);% background_mean;%1761;% 1152;
-                bk_sig = background_std(1) + (background_std(2)-background_std(1))*rand(1,1);%background_std;%409;% 283;               
-
-                % % % Noise model : Gaussian white noise
-                % noisy_pix_merge_z = uint16(rescale_pix_merge_z*10^((SNR+20*log10(bk_sig))/20) + bk_m + bk_sig*randn(32,32));
+                bk_m = background_mean(1) + (background_mean(2)-background_mean(1))*rand(1,1);
+                bk_sig = background_std(1) + (background_std(2)-background_std(1))*rand(1,1);       
 
                 % Noise model : Poisson shot-noise + Gaussian white noise
                 noisy_pix_merge_z = uint16(poissrnd(rescale_pix_merge_z*10^((SNR+20*log10(bk_sig))/20)) + bk_m + bk_sig*randn(32,32));
+                noisy_pix_merge_z(noisy_pix_merge_z<background_offset) = background_offset;
 
                 % noise_img = uint16(bk_m + bk_sig*randn(32,32));
                 good_noisy_pix_merge_z_snr(iter) = 10*log10((double(max(noisy_pix_merge_z,[],'all'))-double(median(noisy_pix_merge_z,'all')))^2/bk_sig^2);
@@ -403,45 +381,7 @@ for iSPT = 1:length(simSPT_file)
 
                 % save the image mask and noisy snapshot
                 imwrite(noisy_pix_merge_z,fullfile(img_pair_saveDir,'imgs',sprintf('0620_%s_TrackID%03d_D%s_SNR%d_dT%02dms_good_rep%03d.tif','Pixelized',now_track.trajecotry_newIdx(1),simSPT_D(iSPT),round(SNR),target_exposure(idT),repIter)));
-                imwrite(mask_pix_merge_z,fullfile(img_pair_saveDir,'masks',sprintf('0620_%s_TrackID%03d_D%s_SNR%d_dT%02dms_good_rep%03d_mask.gif','Pixelized',now_track.trajecotry_newIdx(1),simSPT_D(iSPT),round(SNR),target_exposure(idT),repIter)));
-                
-                % % File Name that record SNR in table later
-                % pix_filename_good{iter,1} = sprintf('%s_TrackID%012d_D%s_SNR%d_dT%02dms_good_rep%03d','Pixelized',now_track.trajecotry_newIdx(1),simSPT_D(iSPT),round(SNR),target_exposure(idT),repIter);
-                %=========    create ground truth of motion blur/mask with good SNR ===============%
-            
-                % %========= save pixelized track image ======== %   
-                % pix_track_img = zeros(320, 320);
-
-                % % Draw lines connecting the pixels
-                % for i = 2:length(pix_track_x)
-                %     [x_line, y_line] = bresenham(pix_track_x(i-1), pix_track_y(i-1), pix_track_x(i), pix_track_y(i));
-                %     ind = sub2ind([320, 320], y_line, x_line);
-                %     pix_track_img(ind) = 1; % Set locations of the line to 1 in the pixelized image
-                % end
-                
-                % % % (Debug only) Display the pixelized image
-                % % figure;
-                % % imagesc(pix_track_img);
-                % % axis image ij;
-                % % colormap(gray);
-                % % imwrite(pix_track_img,fullfile(img_pair_saveDir,'tracks',sprintf('%s_TrackID%012d_D%s_SNR%d_dT%02dms_good_track.tif','Pixelized',now_track.trajecotry_newIdx(1),simSPT_D(iSPT),round(SNR),target_exposure(idT))));
-
-                % % gaussian kernel standard deviation [pixels]
-                % gaussian_sigma = 1;
-
-                % % heatmap psf
-                % psfHeatmap = fspecial('gauss',[7 7],gaussian_sigma);
-
-                % % get the labels per frame in spikes and heatmaps
-                % HeatmapImage = conv2(pix_track_img,psfHeatmap,'same');
-                % imwrite(HeatmapImage,fullfile(img_pair_saveDir,'trackHeatmap',sprintf('%s_TrackID%012d_D%s_SNR%d_dT%02dms_good_trackHeatmap.tif','Pixelized',now_track.trajecotry_newIdx(1),simSPT_D(iSPT),round(SNR),target_exposure(idT))));
-                
-                % % % render localization heatmap
-                % % pix_loc_img = zeros(320,320);
-                % % pix_idx = sub2ind([320,320],pix_track_y,pix_track_x);
-                % % pix_loc_img(pix_idx) = 1;
-                % % render_pix_loc_img = conv2(pix_loc_img,psfHeatmap,'same');
-                % % imwrite(render_pix_loc_img,fullfile(img_pair_saveDir,'locHeatmap',sprintf('%s_TrackID%012d_D%s_SNR%d_dT%02dms_good_locHeatmap.tif','Pixelized',now_track.trajecotry_newIdx(1),simSPT_D(iSPT),round(SNR),target_exposure(idT))));
+                imwrite(mask_pix_merge_z,fullfile(img_pair_saveDir,'masks',sprintf('0620_%s_TrackID%03d_D%s_SNR%d_dT%02dms_good_rep%03d_mask.gif','Pixelized',now_track.trajecotry_newIdx(1),simSPT_D(iSPT),round(SNR),target_exposure(idT),repIter)));                                
 
                 % %========= save pixelized track image ======== %
                 

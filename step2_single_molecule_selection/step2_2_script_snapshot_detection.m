@@ -19,7 +19,8 @@
 %% INTENTIONALLY KEEP BLANK
 %% INTENTIONALLY KEEP BLANK
 clc; clear; close all;
-addpath(genpath('./SMLDM/step2_single_molecule_selection')) % add bio-formats MATLAB Toolbox to the search path
+[folderPath,~,~] = fileparts(mfilename('fullpath'));
+addpath(genpath(folderPath)) % add folder of step2 to the search path
 %% DEFINE PARAMETERS
 
 % >>>>>>>>>>>>>>>>>>>> NUCLEUS SELECTION (LARGE FOV ONLY) >>>>>>>>>>>>>>> %
@@ -44,13 +45,13 @@ filter.useLocFilter = true; % Use ThunderSTORM localization to filter molecule s
 % <<<<<<<<<<<<<<<<<<<< MOTION BLUR DETECTION PARAMETERS <<<<<<<<<<<<<<<<<<<<< %
 
 % DEFINE INPUT AND OUTPUT
-% where you save ND2 file
-input_path = '/path/to/your/data/';
+% The parent folder for raw images
+input_path = '/path/to/your/Paxillin_raw_data/';
 
-% the parent folder of motion blur detection and analysis
-output_path = '/path/to/save/results/';
+% The parent folder for saving analysis results
+output_path = '/path/to/save/Paxillin_results/';
 
-% ND file name
+% Unique identifier for each ND2 image sequence, result from same sequence will be saved in the same folder
 input_rawND2_prefix = {...
     '20240712_Clust01_U2OS_Paxillin',    
     };
@@ -78,10 +79,7 @@ for iSamp = 1:length(input_rawND2_prefix)
             valid_idx = contains(Filenames,input_rawND2_prefix(iSamp)); 
             input_rawND2_list = input_rawND2_list(valid_idx);            
             [currentImage,~] = MemoryEfficientND2reader_oneFrame(fullfile(input_rawND2_list(1).folder, input_rawND2_list(1).name),1);
-            [ImHeight,ImWidth] = size(currentImage); clear currentImage;
-            % img_stack_cell_array = bfopen(fullfile(WideField(1).folder,WideField(1).name));   
-            % currentImage_Widefield = img_stack_cell_array{1}{1,1}; % 3d image matrix
-            % [ImHeight,ImWidth] = size(currentImage_Widefield); clear currentImage_Widefield;
+            [ImHeight,ImWidth] = size(currentImage); clear currentImage;            
             roi_info_nuc = {};
             % for iBulk = 1:length(WideField)
             for iBulk = 1:length(input_rawND2_list)            
@@ -157,7 +155,7 @@ disp('Current version: V2p2 MPALM-BULK sequence');
 disp('============================================')
 disp('============================================')
 
-NumWorkers = 4;
+NumWorkers = 8;
 parpool('local', NumWorkers)
 
 for iSamp = 1:length(input_rawND2_prefix)

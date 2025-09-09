@@ -87,24 +87,22 @@ def estimate_D(SRArea,coeff_a=1162.0):
 weights_file = './checkpoints/MBX_20231220_110nmPix_rep2_epoch9.pth'
 
 # parent directory where you save UNet motion blur extracted mat folder
-rootDir = '/path/to/save/results/'
+rootDir = '/path/to/save/Paxillin_results/'
 
 # directory of UNet motion blur extracted mat folder
 dataDir = [   
     '20240712_Clust01_U2OS_Paxillin_Cell01',    
     ]
 
-# Number of ND2 images per sample in dataDir
-# ND2PerSample = [10 10 10 7 10 10 9]
-
-UNet_model = 'UNet_mask_MBX_20240620_epoch20_Ch1'
-blurmat_file_prefix = 'Blurdata_'+UNet_model
-fitresult_file = 'Fitresult_'+UNet_model+'.csv'
-sr_fileName = UNet_model+'_SR_pred_v3.csv'
+UNet_model = 'UNet_mask_MBX_20240620_epoch20_Ch1' # Indentifier for the UNet model
+blurmat_file_prefix = 'Blurdata_'+UNet_model # File name prefix that record UNet extracted snapshot
+fitresult_file = 'Fitresult_'+UNet_model+'.csv' # File name that record elliptical Gaussian fitting result
+sr_fileName = UNet_model+'_SR_pred_v3.csv' # File name that record all MPALM result
+coeff_a = 1162.0 # Replace with your fitting constant from step 3.2 to convert PT-area to diffusivity, for our model and experimental settings, coeff_a = 1162 when exposure time is 30ms
 
 # raw image files, keep order same as dataDir
 ND2File = [    
-    '/path/to/your/data/20240712_Clust01_U2OS_Paxillin_30p5ms_2kframe_001.nd2',    
+    '/path/to/your/Paxillin_raw_data/20240712_Clust01_U2OS_Paxillin_30p5ms_2kframe_001.nd2',    
     ]
 
 # <<<<<<<<<<<<<<<<<<<<<<<<<<<< input <<<<<<<<<<<<<<<<<<<<<<<<<<<< #
@@ -158,12 +156,6 @@ for iSamp, nowDir in enumerate(dataDir):
                 # matfile = h5py.File(datafile, 'r')
                 # Access the data
                 cell_PSF = matfile['cell_PSF']
-                # total_frame_num = cell_PSF['xyI'][0].size
-                # total_frame_num = int(matfile['impars']['tot_img_num'][0][0])
-
-                # bk_img = []
-
-                # for iSlice in range(ND2PerSample[iSamp]):
 
                 ND2_img = nd2.imread(ND2File[ND2_index_adjusted])
 
@@ -248,7 +240,7 @@ for iSamp, nowDir in enumerate(dataDir):
 
                                     SRmask, SRArea = simple_mask_cutoff(pred_img=predicted_density_cpu, min_threshold=0.1)
 
-                                    guess_D = estimate_D(SRArea,coeff_a=1162.0)
+                                    guess_D = estimate_D(SRArea,coeff_a=coeff_a)
 
                                     if guess_D > 1:                           
                                         # Use weighted centroid
@@ -357,7 +349,7 @@ for iSamp, nowDir in enumerate(dataDir):
 
                                     SRmask, SRArea = simple_mask_cutoff(pred_img=predicted_density_cpu, min_threshold=0.1)
 
-                                    guess_D = estimate_D(SRArea,coeff_a=1162.0)
+                                    guess_D = estimate_D(SRArea,coeff_a=coeff_a)
 
                                     if guess_D > 1:                           
                                         # Use weighted centroid

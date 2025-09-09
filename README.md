@@ -10,23 +10,24 @@ Python 3.7
 
 Fiji distribution of ImageJ
 
-MATLAB 2021 or higher version
+MATLAB 2021 or higher version with the below add-ons installed (additional liscences may required):
+1) Image Processing Toolbox
+2) Statistics and Machine Learning Toolbox
+3) Parallel Computing Toolbox
+4) Curve Fitting Toolbox
 
-Hardware: NVIDIA GPU supporting CUDA 11.7, we use NVIDIA Quadro P4000.
+Hardware requirement: NVIDIA GPU supporting CUDA 11.7, we use NVIDIA Quadro P4000.
+| **Component** | **Minimum Requirement**       | **Recommended**                   |
+|---------------|-------------------------------|-----------------------------------|
+| CPU RAM       | 8 GB                          | 16 GB or more                     |
+| GPU VRAM      | 8 GB supporting CUDA 11.7     | 8 GB                              |
 
-### Seting up a conda environment
+### Setting up a conda environment
 
 We recommend create a new conda environment with Python version 3.7. After activating the conda environment, cd to the directory created from the Github clone command, and use below command to install the dependent packages from requirements.txt.
 
 ```bash
 pip install -r requirements.txt
-```
-
-For deep learning training and inference, we use CUDA 11.7 with PyTorch 1.13.0. In the activated conda environment, you can install PyTorch using the following command:
-
-```bash
-# CUDA 11.7
-conda install pytorch==1.13.0 torchvision==0.14.0 torchaudio==0.13.0 pytorch-cuda=11.7 -c pytorch -c nvidia
 ```
 
 ### Setting Up CUDA Environment Path
@@ -63,6 +64,9 @@ To enable PyTorch to run on the GPU, you need to add the CUDA toolkit to the sys
 
 These scripts will automatically set and unset the CUDA environment variables when you activate and deactivate your conda environment, respectively.
 
+### Setting up wandb account for logging training progress (optional)
+Set up an account at [Weights & Biases](https://wandb.ai/site/), and follow the [Quick Start guide](https://docs.wandb.ai/quickstart) to configure your wandb account in the activated conda environment.
+We strongly recommend to use wandb to log the training progress, otherwise you need to delete all `-do_log` option in below training script.
 
 # Train your own models
 
@@ -70,7 +74,9 @@ You can download our provided the pretrained U-Net model (`checkpoint_UNet_epoch
 
 ## Step 1: simSnapshot
 
-We developed a pipeline to convert the simulated Brownian diffusing trajectories into simulated molecule snapshot images together with its mask and track image as datasets for downstream model training. The molecule trajectories were generated using a pubished method called simSPT ([Tjian - Darzacq lab / simSPT · GitLab](https://gitlab.com/tjian-darzacq-lab/simSPT)). We generated a set of trajectories with logarithmically increasing diffusion coefficients using the command recorded in `simSPT_script.txt`. For convenience, we simulated long tracks with 1-ms time interval and segmented them into shorter segments matching the desired exposure time. Notably, we modified the `betaUnit` parameter in the original `simSPT.c` file from 0 to 1 to count track lifetime in seconds.
+We developed a pipeline to convert the simulated Brownian diffusing trajectories into simulated molecule snapshot images together with its mask and track image as datasets for downstream model training. The molecule trajectories were generated using a pubished method called simSPT ([Tjian - Darzacq lab / simSPT · GitLab](https://gitlab.com/tjian-darzacq-lab/simSPT)). We generated a set of trajectories with logarithmically increasing diffusion coefficients using the command recorded in `simSPT_script.txt`. For convenience, we simulated long tracks with 1-ms time interval and segmented them into shorter segments matching the desired exposure time. 
+
+Notably, we modified the `betaUnit` parameter in the original `simSPT.c` file from 0 to 1 to count track lifetime in seconds to generate long tracks. We also modified the `gaps` parameters in the original `simSPT.c` file from 1 to 0 to avoid gaps in tracks.
 
 We provided our simulated molecule trajectories under the zenodo repository https://zenodo.org/records/15089354.
 
@@ -99,7 +105,9 @@ And define a data path where you save your checkpoint files:
 
 Run the `.sh` file to generate customized U-Net models.
 
-## Step 3: Deep-SnapTrack training
+We provide scripts for two mode of training, either training with a single GPU or training with multiple GPUs using torchrun.
+
+## Step 3.1: Deep-SnapTrack training
 
 In order to train Deep-SnapTrack with your own data, you need to prepare simulated single molecule snapshot images and corresponding ground truth trajectory maps. Specify your path to data pairs in `step3-0_ptorch_train.sh` by defining:
 
@@ -116,17 +124,29 @@ And define a data path where you save your checkpoint files:
 
 Run the `.sh` file to generate customized Deep-SnapTrack models.
 
+We provide scripts for two mode of training, either training with a single GPU or training with multiple GPUs using torchrun.
+
+## Step 3.2: Set Calibration Curve Between PT-area and Diffusivity
+To establish a calibration curve that relates PT area to molecule diffusivity, we must first obtain the simulated snapshot images with known ground-truth diffusivity. To do this, run the `step0_sim_1molecule_Calibrate.m` script from the `step0_simSnapshot` directory, setting the high signal-to-noise ratio (SNR) range to [35 35], since we have demonstrated that the calibration curve is robust under various SNR levels.
+
+Next, run the `Gauss2D_calibration.ipynb` script from the `step0_simSnapshot` directory to predict the PT-area for the simulated snapshot images. Be sure to use the trained model weight from step 3.1. The results will be saved in a comma-separated values (CSV) file containing the ground-truth diffusivity and predicted PT-area for each simulated snapshot image.
+
+Then, read the csv into matlab using readtable() and fit using the equation `y = coeff_a*sqrt(x)`, where y is PT-area, and x is D_value, and obtain the fitting constant `coeff_a`.
+
+
 # SMLDM data analysis
 
 We will use one ND2 image captured for Paxillin-Halo as the example to demonstrate the analysis pipeline. You can download this image file from the the zenodo repository https://zenodo.org/records/15089354.
+
+Before start, you need to place the raw image `20240712_Clust01_U2OS_Paxillin_30p5ms_2kframe_001.nd2` under the path `/path/to/your/Paxillin_raw_data`, and create a folder `Paxillin_results` under the path `/path/to/save` to save the result files.
 
 ## Step 1: U-Net Segmentation
 
 To do segmentation with U-Net, specify your data path in the corresponding section of `step1-1_ND2batch_prediction.sh`:
 
     --model /path/to/your/model/checkpoint_UNet_epoch20.pth \
-    --input /path/to/your/data/20240712_Clust01_U2OS_Paxillin_30p5ms_2kframe_001.nd2 \
-    --output /path/to/save/results/
+    --input /path/to/your/Paxillin_raw_data/20240712_Clust01_U2OS_Paxillin_30p5ms_2kframe_001.nd2 \
+    --output /path/to/save/Paxillin_results/
 
  The output will be a `.tif` file corresponding to your raw data named `UNet_mask_MBX_20240620_epoch20_Ch1.tif`
 
@@ -134,10 +154,15 @@ To do segmentation with U-Net, specify your data path in the corresponding secti
 
 ### Do ThunderSTORM Localizations
 
-We use ThunderSTORM (https://github.com/zitmen/thunderstorm) to assist in selecting qualified snapshot from U-Net result, i.e. only one ThunderSTORM localization in a U-Net mask is kept as single-molecule snapshot for downstream analysis. To do this, please first install [ThunderSTORM](zitmen.github.io/thunderstorm/) plugin in your ImageJ. Then, choose `Run Macro` and select `step2-1_IJmacro_ThunderSTORM.ijm`, which will open an interface for you to load raw images and define output path for localization result. Edit the line 14 to replace your file prefix and suffix, so that the script can read all your image files. Before running the script, please create a new folder called ThunderSTORM under the parent folder of previous output folder, and save the result of ThunderSTORM in this folder:
+We use ThunderSTORM (https://github.com/zitmen/thunderstorm) to assist in selecting qualified snapshot from U-Net result, i.e. only one ThunderSTORM localization in a U-Net mask is kept as single-molecule snapshot for downstream analysis. To do this, please first install [ThunderSTORM](zitmen.github.io/thunderstorm/) plugin in your ImageJ. Then, modify the input and output folder path in `step2-1_IJmacro_ThunderSTORM.ijm`. Edit the line 30 if you want to include more filter string to filter your image files. The script will first create a new folder "ThunderSTORM" under the root result path `Paxillin_results`, the localization files from ThunderSTORM will be saved there.
 
 ```
-/path/to/save/results/ThunderSTORM
+input_dirs = newArray(
+	"/path/to/your/Paxillin_raw_data/"
+);
+output_dirs = newArray(
+	"/path/to/save/Paxillin_results/ThunderSTORM/"
+);
 ```
 After finish the ThunderSTORM step, move to `step2-2_script_snapshot_detection.m` to use ThunderSTORM localization filter the qualified single-molecule snapshots.
 
@@ -158,13 +183,13 @@ Next, specify your data path:
 
 ```matlab
 % >>>>>>>>>>>>>>>>>>>> MOTION BLUR DETECTION PARAMETERS >>>>>>>>>>>>>>>>>>>> %
-% directory of where your raw image data located
-input_path = '/path/to/your/data/';
+% The parent folder for raw images
+input_path = '/path/to/your/Paxillin_raw_data/';
 
-% the parent folder of motion blur detection and analysis
-output_path = '/path/to/save/results/';
+% The parent folder for saving analysis results
+output_path = '/path/to/save/Paxillin_results/';
 
-% defined name of your result for each cell
+% Unique identifier for each ND2 image sequence, result from same sequence will be saved in the same folder
 input_rawND2_prefix = {...
     '20240712_Clust01_U2OS_Paxillin',
      };
@@ -183,21 +208,22 @@ To do prediction with Deep-SnapTrack, specify the data path in the corresponding
 weights_file = './checkpoints/MBX_20231220_110nmPix_rep2_epoch9.pth'
 
 # parent directory where you save U-Net motion blur extracted mat folder
-rootDir = '/path/to/save/results'
+rootDir = '/path/to/save/Paxillin_results'
 
 # directory of U-Net motion blur extracted mat folder
 dataDir = [   
     '20240712_Clust01_U2OS_Paxillin_Cell01',
     ]
 
-UNet_model = 'UNet_mask_MBX_20240620_epoch20_Ch1'
-blurmat_file_prefix = 'Blurdata_'+UNet_model
-fitresult_file = 'Fitresult_'+UNet_model+'.csv'
-sr_fileName = UNet_model+'_SR_pred_v3.csv'
+UNet_model = 'UNet_mask_MBX_20240620_epoch20_Ch1' # Indentifier for the UNet model
+blurmat_file_prefix = 'Blurdata_'+UNet_model # File name prefix that record UNet extracted snapshot
+fitresult_file = 'Fitresult_'+UNet_model+'.csv' # File name that record elliptical Gaussian fitting result
+sr_fileName = UNet_model+'_SR_pred_v3.csv' # File name that record all MPALM result
+coeff_a = 1162.0 # Replace with your fitting constant from step 3.2 to convert PT-area to diffusivity, for our model and experimental settings, coeff_a = 1162
 
 # raw image files, keep order same as dataDir
 ND2File = [    
-    '/path/to/your/data/20240712_Clust01_U2OS_Paxillin_30p5ms_2kframe_001.nd2',
+    '/path/to/your/Paxillin_raw_data/20240712_Clust01_U2OS_Paxillin_30p5ms_2kframe_001.nd2',
     ]
 
 # <<<<<<<<<<<<<<<<<<<<<<<<<<<< input <<<<<<<<<<<<<<<<<<<<<<<<<<<< #
@@ -240,6 +266,30 @@ The mat file contains:
 | input_path          | Raw image path                                                              | char          |
 | input_rawND2_prefix | The prefix of image used for naming files                                   | char          |
 | output_path         | Path to save result                                                         | char          |
-### Step 4: MPALM rendering
+
+### File path tree after step 1-3
+After running step 1-3, you should get a file path tree like below:
+```text
+Paxillin_raw_data/
+└── 20240712_Clust01_U2OS_Paxillin_30p5ms_2kframe_001.nd2
+Paxillin_results/
+├── 20240712_Clust01_U2OS_Paxillin_30p5ms_2kframe_001/
+│   └── UNet_mask_MBX_20240620_epoch20_Ch1.tif
+├── 20240712_Clust01_U2OS_Paxillin_Cell01/
+│   ├── Blurdata_UNet_mask_MBX_20240620_epoch20_Ch1_Slice01.mat
+│   ├── Fitresult_UNet_mask_MBX_20240620_epoch20_Ch1.csv
+│   └── UNet_mask_MBX_20240620_epoch20_Ch1_SR_pred_v3.csv
+├── roi_files/
+│   └── 20240712_Clust01_U2OS_Paxillin_roi_metadata.mat
+└── ThunderSTORM/
+    ├── 20240712_Clust01_U2OS_Paxillin_30p5ms_2kframe_001_C1.csv
+    └── 20240712_Clust01_U2OS_Paxillin_30p5ms_2kframe_001_C1-protocol.txt
+```
+
+## Step 4: MPALM rendering
 
  You can get the final visualization result by uploading the two files generated from the last step` UNet_mask_MBX_20240620_epoch20_Ch1_SR_pred_v3.csv`  and `Blurdata_UNet_mask_MBX_20240620_epoch20_Ch1.mat `to the MATLAB app provided under ./step4_MPALM_rendering/step4_main_mobilityPALM.mlapp. For the user guide of this app, please see ./step4_MPALM_rendering/Users Guide.docx.
+
+ ## Common bug fix:
+ 1. Get error when running step2 after renaming folder to other name \
+ Fix: check if there is any temporal file generated under raw image folder, if yes, delete them all.

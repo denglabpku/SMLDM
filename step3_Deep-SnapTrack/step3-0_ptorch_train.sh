@@ -15,7 +15,8 @@ ptorch_Training_parallel.py \
     --log_all \
     --RunName MBX_20231220_110nmPix_rep2
 
-# # Training Deep-SnapTrack with single GPUs
+# -- uncomment below -- #
+# # Script for training Deep-SnapTrack with one GPU
 # python ptorch_Training_single.py \
 #     --project Deep-SnapTrack \
 #     --dir_img /path/to/save/simulated_dataset_forDeepSnapTrack/imgs \

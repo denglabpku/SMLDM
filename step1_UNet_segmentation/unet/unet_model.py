@@ -1,6 +1,7 @@
 """ Full assembly of the parts to form the complete network """
 
 from .unet_parts import *
+import torch.utils.checkpoint as cp
 
 
 class UNet(nn.Module):
@@ -26,43 +27,36 @@ class UNet(nn.Module):
         self.up4 = (Up(128, 64, bilinear))
         self.outc = (OutConv(64, n_classes))
 
-    # def forward(self, x):
-    #     x1 = self.inc(x)
-    #     x2 = self.down1(x1)
-    #     x3 = self.down2(x2)
-    #     x4 = self.down3(x3)
-    #     x5 = self.down4(x4)
-    #     x = self.up1(x5, x4)
-    #     x = self.up2(x, x3)
-    #     x = self.up3(x, x2)
-    #     x = self.up4(x, x1)
-    #     logits = self.outc(x)
-    #     return logits
-    
-    def forward(self, x):
-        x1 = self.inc(x)
-        x2 = self.down1(x1)
-        x3 = self.down2(x2)
-        x4 = self.down3(x3)
-        
-        x4 = self.dropout_end_contracting(x4)  # Apply dropout at the end of the contracting path
-        
-        x5 = self.down4(x4)
-        x = self.up1(x5, x4)
-        x = self.up2(x, x3)
-        x = self.up3(x, x2)
-        x = self.up4(x, x1)
-        logits = self.outc(x)
-        return logits
+        self.use_cp = False
 
+    def forward(self, x):            
+        if self.use_cp:
+            x1 = cp.checkpoint(self.inc, x)
+            x2 = cp.checkpoint(self.down1, x1)
+            x3 = cp.checkpoint(self.down2, x2)
+            x4 = cp.checkpoint(self.down3, x3)
+            x4 = self.dropout_end_contracting(x4)  # Apply dropout at the end of the contracting path
+            x5 = cp.checkpoint(self.down4, x4) 
+            x = cp.checkpoint(self.up1, x5, x4)
+            x = cp.checkpoint(self.up2, x, x3)
+            x = cp.checkpoint(self.up3, x, x2)
+            x = cp.checkpoint(self.up4, x, x1)
+            logits = cp.checkpoint(self.outc, x)
+            return logits
+
+        else:
+            x1 = self.inc(x)
+            x2 = self.down1(x1)
+            x3 = self.down2(x2)
+            x4 = self.down3(x3)
+            x4 = self.dropout_end_contracting(x4)  # Apply dropout at the end of the contracting path        
+            x5 = self.down4(x4)
+            x = self.up1(x5, x4)
+            x = self.up2(x, x3)
+            x = self.up3(x, x2)
+            x = self.up4(x, x1)
+            logits = self.outc(x)
+            return logits        
+    
     def use_checkpointing(self):
-        self.inc = torch.utils.checkpoint(self.inc)
-        self.down1 = torch.utils.checkpoint(self.down1)
-        self.down2 = torch.utils.checkpoint(self.down2)
-        self.down3 = torch.utils.checkpoint(self.down3)
-        self.down4 = torch.utils.checkpoint(self.down4)
-        self.up1 = torch.utils.checkpoint(self.up1)
-        self.up2 = torch.utils.checkpoint(self.up2)
-        self.up3 = torch.utils.checkpoint(self.up3)
-        self.up4 = torch.utils.checkpoint(self.up4)
-        self.outc = torch.utils.checkpoint(self.outc)
+        self.use_cp = True 

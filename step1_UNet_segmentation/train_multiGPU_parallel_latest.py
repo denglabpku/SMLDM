@@ -324,7 +324,7 @@ def get_args():
     parser.add_argument('--dir_imgs', '-I', type=str, default=False, help='directory of ground truth images',required=True)
     parser.add_argument('--dir_masks', '-M', type=str, default=False, help='directory of ground truth masks',required=True)
     parser.add_argument('--dir_checkpoints', '-check', type=str, default='./checkpoints/', help='directory of saving checkpoint model',required=True)
-
+    parser.add_argument("--do_log", action="store_true", help="flag to log training process")
     return parser.parse_args()
 
 def remove_module_key(state_dict):
@@ -337,8 +337,8 @@ def remove_module_key(state_dict):
         new_state_dict[new_key] = value
     return new_state_dict
 
-def setup_run(local_rank):
-    if local_rank == 0:
+def setup_run(local_rank, args):
+    if local_rank == 0 and args.do_log:
         run = wandb.init(
             project='Parallel U-Net',
             anonymous='must',
@@ -390,7 +390,7 @@ if __name__ == '__main__':
     model.n_classes = args.classes    
 
     # wandb.init a run if logging, otherwise return None
-    run = setup_run(local_rank)
+    run = setup_run(local_rank,args)
     # run = None
 
     try:

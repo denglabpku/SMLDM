@@ -5,8 +5,8 @@ python ND2batch_prediction_latest.py \
     --model_version=${model_version} \
     --mpalm_channel=1 \
     --input \
-    '/path/to/your/data/20240712_Clust01_U2OS_Paxillin_30p5ms_2kframe_001.nd2'\
-    --output /path/to/save/results/
+    '/path/to/your/Paxillin_raw_data/20240712_Clust01_U2OS_Paxillin_30p5ms_2kframe_001.nd2'\
+    --output /path/to/save/Paxillin_results/
 
 
 
