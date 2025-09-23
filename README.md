@@ -7,7 +7,7 @@ Single Molecule Localization and Diffusivity Microscopy
 
 SMLDM has the following depencies:
 
-Python 3.7
+Python 3.10
 
 Fiji distribution of ImageJ
 
@@ -25,7 +25,7 @@ Hardware requirement: NVIDIA GPU supporting CUDA 11.7, we use NVIDIA Quadro P400
 
 ### Setting up a conda environment
 
-We recommend create a new conda environment with Python version 3.7. After activating the conda environment, cd to the directory created from the Github clone command, and use below command to install the dependent packages from requirements.txt.
+We recommend create a new conda environment with Python version 3.10. After activating the conda environment, cd to the directory created from the Github clone command, and use below command to install the dependent packages from requirements.txt.
 
 ```bash
 pip install -r requirements.txt
@@ -132,7 +132,7 @@ To establish a calibration curve that relates PT area to molecule diffusivity, w
 
 Next, run the `Gauss2D_calibration.ipynb` script from the `step0_simSnapshot` directory to predict the PT-area for the simulated snapshot images. Be sure to use the trained model weight from step 3.1. The results will be saved in a comma-separated values (CSV) file containing the ground-truth diffusivity and predicted PT-area for each simulated snapshot image.
 
-Then, read the csv into matlab using readtable() and fit using the equation `y = coeff_a*sqrt(x)`, where y is PT-area, and x is D_value, and obtain the fitting constant `coeff_a`.
+Then, read the csv and fit using the equation `y = coeff_a*sqrt(x)`, where y is PT-area, and x is D_value, and obtain the fitting constant `coeff_a`.
 
 
 # SMLDM data analysis
