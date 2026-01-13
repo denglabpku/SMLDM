@@ -79,7 +79,7 @@ We developed a pipeline to convert the simulated Brownian diffusing trajectories
 
 Notably, we modified the `betaUnit` parameter in the original `simSPT.c` file from 0 to 1 to count track lifetime in seconds to generate long tracks. We also modified the `gaps` parameters in the original `simSPT.c` file from 1 to 0 to avoid gaps in tracks.
 
-We provided our simulated molecule trajectories under the zenodo repository https://zenodo.org/records/15089354.
+We provided our simulated molecule trajectories under the zenodo repository https://zenodo.org/records/15233247.
 
 Next, we generated training datasets for the U-Net segmentation model. First, we placed four molecule trajectories into a single 32×32 image with a pixel size of 110 nm. The positions of the molecule trajectories were convolved with a Gaussian model of the microscopic point-spread function (PSF). The resulting matrix was then binned, rescaled to the desired signal-to-noise ratio (SNR), and augmented with both Gaussian white noise and Poisson shot noise to mimic experimental molecule snapshots. The mask for each molecule was defined as the region encompassing the top 95% of the total intensity signal. The simulated snapshot and corresponding mask images were paired to serve as the ground truth for U-Net training. This process can be executed using the following script:
 
